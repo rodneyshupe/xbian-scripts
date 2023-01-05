@@ -8,7 +8,7 @@ REMOTE_PATH="${3:-$REMOTE_PATH}"
 LOCAL_PATH="${4:-$LOCAL_PATH}"
 
 log_prefix() {
-  echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] $(basename "$(test -L "$0" && readlink "$0" || echo "$0")"): "
+    echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] $(basename "$(test -L "$0" && readlink "$0" || echo "$0")"): "
 }
 
 secs_to_human() {
@@ -18,26 +18,26 @@ secs_to_human() {
 
 # Function to extract the value of a node from an XML file
 get_kodi_setting() {
-  # Set the variables for the node and parent node names
-  local node="${1:-host}"
-  local parent_node="${2:-videodatabase}"
-  local file="${3}"
-  if [ -z ${file} ] || [ ! -f ${file} ]; then
-    kodi_user="$(ps aux | grep kodi | grep -v grep | head -n1 | cut -d ' ' -f1)"
-    [ -z $kodi_user ] && kodi_user="$(getent passwd 1000 | cut -d: -f1)"
-    file="/home/${kodi_user}/.kodi/userdata/advancedsettings.xml"
-  fi
+    # Set the variables for the node and parent node names
+    local node="${1:-host}"
+    local parent_node="${2:-videodatabase}"
+    local file="${3}"
+    if [ -z ${file} ] || [ ! -f ${file} ]; then
+        kodi_user="$(ps aux | grep kodi | grep -v grep | head -n1 | cut -d ' ' -f1)"
+        [ -z $kodi_user ] && kodi_user="$(getent passwd 1000 | cut -d: -f1)"
+        file="/home/${kodi_user}/.kodi/userdata/advancedsettings.xml"
+    fi
 
-  # Set the regular expression to match the node
-  local regex="<${node}>.*</${node}>"
+    # Set the regular expression to match the node
+    local regex="<${node}>.*</${node}>"
 
-  # If a parent node was specified, add it to the regular expression
-  if [[ -n "$parent_node" ]]; then
-    regex="<${parent_node}>.*${regex}.*</${parent_node}>"
-  fi
+    # If a parent node was specified, add it to the regular expression
+    if [[ -n "$parent_node" ]]; then
+        regex="<${parent_node}>.*${regex}.*</${parent_node}>"
+    fi
 
-  # Extract the value of the node using grep and sed
-  tr '\n' ' ' <"${file}" | grep --text --only-matching --ignore-case --regexp "$regex" | sed "s/.*<${node}>\(.*\)<\/${node}>.*/\1/i"
+    # Extract the value of the node using grep and sed
+    tr '\n' ' ' <"${file}" | grep --text --only-matching --ignore-case --regexp "$regex" | sed "s/.*<${node}>\(.*\)<\/${node}>.*/\1/i"
 }
 
 MYSQL_HOST="$(get_kodi_setting 'host')"
@@ -85,11 +85,11 @@ mysql --skip-column-names \
 echo "$(log_prefix)Scan missing..."
 STREAM_MISSING=0
 while read PATH_LINE; do
-  if ! grep -Fxq "$PATH_LINE" "$TMP_FILELIST_LIBRARY"; then
-    echo "$(log_prefix)Calling Kodi API to Scan $(basename "${PATH_LINE}")..."
-    kodi-rpc VideoLibrary.Scan directory "$(dirname "${PATH_LINE}")" showdialogs false > /dev/null
-    sleep 5s
-  fi
+    if ! grep -Fxq "$PATH_LINE" "$TMP_FILELIST_LIBRARY"; then
+        echo "$(log_prefix)Calling Kodi API to Scan $(basename "${PATH_LINE}")..."
+        kodi-rpc VideoLibrary.Scan directory "$(dirname "${PATH_LINE}")" showdialogs false > /dev/null
+        sleep 5s
+    fi
 done < "${TMP_FILELIST_LOCAL}"
 
 rm "${TMP_FILELIST_LOCAL}"

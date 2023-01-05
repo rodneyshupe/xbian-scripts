@@ -87,18 +87,18 @@ backup_files=( /etc/ssh/sshd_config \
 #/usr/bin/kodi-remove-watched \
 
 for path in "${backup_files[@]}"; do
-  if [ -e "${path}" ]; then
-    if [ -d "${path}" ]; then
-      mkdir "$(encode_path ${path})/"
-      cp "${path}/"* "$(encode_path ${path})/"
-    elif [ -f "${path}" ]; then
-      cp "${path}" "$(encode_path ${path})"
+    if [ -e "${path}" ]; then
+        if [ -d "${path}" ]; then
+            mkdir "$(encode_path ${path})/"
+            cp "${path}/"* "$(encode_path ${path})/"
+        elif [ -f "${path}" ]; then
+            cp "${path}" "$(encode_path ${path})"
+        else
+            echo "  ERROR: $path. Not recognized as directory or file."
+        fi
     else
-      echo "  ERROR: $path. Not recognized as directory or file."
+        echo "  ERROR: File (${path}) Missing"
     fi
-  else
-    echo "  ERROR: File (${path}) Missing"
-  fi
 done
 
 cd ..

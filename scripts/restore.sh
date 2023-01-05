@@ -61,64 +61,64 @@ cd "${HOMEDIR}"
 
 #Check for system backup and restore
 if [ -d system ]; then
-  cd system
+    cd system
 
-  # Crontab
-  [ -f crontab ] && sudo crontab crontab && rm crontab
+    # Crontab
+    [ -f crontab ] && sudo crontab crontab && rm crontab
 
-  # Apt sources file
-  if [ -f ::etc::apt::sources.list ]; then
-    echo "Restoring package sources..."
-    sudo apt-get -qq update
-    sudo mv ::etc::apt::sources.list /etc/apt/sources.list && sudo apt-get --quiet update
-  fi
-
-  # Install missing packages
-  if [ -f .installed_packages ]; then
-    #TODO: read file and install missing packages.
-    echo "Installing missing packages:"
-
-    tmp_installed_list=".temp_installed"
-    sudo apt list --installed 2>/dev/null | sudo cut -d '/' -f 1 > "${tmp_installed_list}"
-    while IFS= read -r package_name; do
-      if ! cat "${tmp_installed_list}" | grep "^${package_name}$" > /dev/null ; then
-        echo "   Installing ${package_name}..."
-        #sudo apt-get -qq -y install ${package_name}
-      fi
-    done < ".installed_packages"
-    rm "${tmp_installed_list}"
-    rm ".installed_packages"
-  fi
-
-  for path in *; do
-    dest_path="$(encode_path ${path})"
-    [[ $dest_path == "${HOMEDIR}/"* ]] && do_sudo="" || do_sudo="sudo "
-    if [ -d "${path}" ]; then
-      echo "${do_sudo}mkdir ""${dest_path}/"""
-      echo "${do_sudo}cp ""${path}/""* ""${dest_path}/"" && ${do_sudo}rm -R ""${path}/"""
-    elif [ -f "${path}" ]; then
-      echo "${do_sudo}mv ""${path}"" ""${dest_path}"""
-    else
-      echo "  ERROR: $path. Not recognized as directory or file."
+    # Apt sources file
+    if [ -f ::etc::apt::sources.list ]; then
+        echo "Restoring package sources..."
+        sudo apt-get -qq update
+        sudo mv ::etc::apt::sources.list /etc/apt/sources.list && sudo apt-get --quiet update
     fi
-  done
 
-  cd ..
+    # Install missing packages
+    if [ -f .installed_packages ]; then
+        #TODO: read file and install missing packages.
+        echo "Installing missing packages:"
+
+        tmp_installed_list=".temp_installed"
+        sudo apt list --installed 2>/dev/null | sudo cut -d '/' -f 1 > "${tmp_installed_list}"
+        while IFS= read -r package_name; do
+            if ! cat "${tmp_installed_list}" | grep "^${package_name}$" > /dev/null ; then
+                echo "   Installing ${package_name}..."
+                #sudo apt-get -qq -y install ${package_name}
+            fi
+        done < ".installed_packages"
+        rm "${tmp_installed_list}"
+        rm ".installed_packages"
+    fi
+
+    for path in *; do
+        dest_path="$(encode_path ${path})"
+        [[ $dest_path == "${HOMEDIR}/"* ]] && do_sudo="" || do_sudo="sudo "
+        if [ -d "${path}" ]; then
+            echo "${do_sudo}mkdir ""${dest_path}/"""
+            echo "${do_sudo}cp ""${path}/""* ""${dest_path}/"" && ${do_sudo}rm -R ""${path}/"""
+        elif [ -f "${path}" ]; then
+            echo "${do_sudo}mv ""${path}"" ""${dest_path}"""
+        else
+            echo "  ERROR: $path. Not recognized as directory or file."
+        fi
+    done
+
+    cd ..
 fi
 
 if [ -f kodi_backup.sql ]; then
-  echo "Restoring kodi db backups..."
+    echo "Restoring kodi db backups..."
 
-  export MYSQL_PWD=$MYSQL_PASS
+    export MYSQL_PWD=$MYSQL_PASS
 
-  cat kodi_backup.sql | mysql --user=$MYSQL_USER && sudo rm -R kodi_backup.sql
+    cat kodi_backup.sql | mysql --user=$MYSQL_USER && sudo rm -R kodi_backup.sql
 fi
 
 if [ -d userdata ]; then
-  echo "Restoring kodi userdata backups..."
-  cp --recursive --quiet userdata/* "${OS_DEFAULT_USER_DIR}/.kodi/userdata/"
+    echo "Restoring kodi userdata backups..."
+    cp --recursive --quiet userdata/* "${OS_DEFAULT_USER_DIR}/.kodi/userdata/"
 
-  cd "${HOMEDIR}"
+    cd "${HOMEDIR}"
 fi
 
 cd "${CURRENT_DIR}"

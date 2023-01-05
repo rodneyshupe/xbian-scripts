@@ -15,18 +15,18 @@ function secs_to_human() {
 }
 
 function ensure_sudo() {
-  if sudo -n true 2>/dev/null; then
-    true
-  else
-    echo
-    echo -ne "This script requires admin access. Please enter your Admin "
-    sudo true
-    if [ $? -eq 0 ]; then
-      true
+    if sudo -n true 2>/dev/null; then
+        true
     else
-      false
+        echo
+        echo -ne "This script requires admin access. Please enter your Admin "
+        sudo true
+        if [ $? -eq 0 ]; then
+            true
+        else
+            false
+        fi
     fi
-  fi
 }
 
 START_SEC=$(date +%s)

@@ -21,8 +21,8 @@ curl -sSL https://rclone.org/install.sh | sudo bash
 # Install `kodi-rpc`
 echo "Install kodi-rpc script..."
 wget --quiet --output-document=/tmp/kodi-rpc https://raw.githubusercontent.com/tadly/kodi-rpc/master/kodi-rpc \
-  && bash /tmp/kodi-rpc --install \
-  && sudo chmod +x /usr/bin/kodi-rpc \
+    && bash /tmp/kodi-rpc --install \
+    && sudo chmod +x /usr/bin/kodi-rpc \
 rm /tmp/kodi-rpc 2>/dev/null
 
 echo "    Write config file..."
@@ -56,34 +56,34 @@ sudo apt-get install -y logrotate
 
 [ ! -f "/etc/logrotate.d/$USER" ] && sudo tee "/etc/logrotate.d/$USER" > /dev/null <<EOF
 /var/log/$USER/kodi-removed-watched.log {
-  rotate 4
-  weekly
-  missingok
-  notifempty
+    rotate 4
+    weekly
+    missingok
+    notifempty
 }
 /var/log/$USER/kodi-episode-check.log {
-  rotate 4
-  weekly
-  missingok
-  notifempty
+    rotate 4
+    weekly
+    missingok
+    notifempty
 }
 /var/log/$USER/sonarr-unmonitor-watched.log {
-  rotate 4
-  weekly
-  missingok
-  notifempty
+    rotate 4
+    weekly
+    missingok
+    notifempty
 }
 /var/log/$USER/kodi-detail-check.log {
-  rotate 4
-  weekly
-  missingok
-  notifempty
+    rotate 4
+    weekly
+    missingok
+    notifempty
 }
 /var/log/$USER/backup.log {
-  rotate 4
-  weekly
-  missingok
-  notifempty
+    rotate 4
+    weekly
+    missingok
+    notifempty
 }
 EOF
 
