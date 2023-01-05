@@ -222,7 +222,7 @@ GetSystemInformation() {
 }
 
 PrintSystemInformation() {
-    #Uptime and memory
+    #Uptime and Users
     printf "    %-10s%-39s %-10s %-6s\\n" "Uptime:" "${system_uptime}" "Users logged in:" "${logged_in}"
 
     # CPU temp, load, percentage
