@@ -5,6 +5,8 @@ GITHUB_REPO_URL="https://raw.githubusercontent.com/rodneyshupe/xbian-scripts/mai
 FLAG_FORCE=0
 [ $# -eq 1 ] && [ "$1" == "-f" ] && FLAG_FORCE=1
 
+CMD_PATH='/usr/local/bin' # changed from '/usr/bin'
+
 echo "This script requires sudo permissions."
 sudo true
 
@@ -87,12 +89,12 @@ EOF
 
 # Copy Utility Commands
 echo "Copy Utility Commands..."
-curl -sSL "$GITHUB_REPO_URL/scripts/restart-kodi.sh" | sudo tee /usr/bin/restart-kodi > /dev/null
-curl -sSL "$GITHUB_REPO_URL/scripts/sys-status.sh" | sudo tee /usr/bin/sys-status > /dev/null
-curl -sSL "$GITHUB_REPO_URL/scripts/version.sh" | sudo tee /usr/bin/version > /dev/null
-sudo chmod +x /usr/bin/restart-kodi
-sudo chmod +x /usr/bin/sys-status
-sudo chmod +x /usr/bin/version
+curl -sSL "$GITHUB_REPO_URL/scripts/restart-kodi.sh" | sudo tee "$CMD_PATH/restart-kodi" > /dev/null
+curl -sSL "$GITHUB_REPO_URL/scripts/sys-status.sh" | sudo tee "$CMD_PATH/sys-status" > /dev/null
+curl -sSL "$GITHUB_REPO_URL/scripts/versions.sh" | sudo tee "$CMD_PATH/versions" > /dev/null
+sudo chmod +x "$CMD_PATH/restart-kodi"
+sudo chmod +x "$CMD_PATH/sys-status"
+sudo chmod +x "$CMD_PATH/versions"
 
 # Copy Sample `.env` Files
 echo "Copy Sample .env Files..."
