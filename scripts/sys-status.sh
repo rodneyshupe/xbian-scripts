@@ -223,7 +223,7 @@ GetSystemInformation() {
 
 PrintSystemInformation() {
     #Uptime and memory
-    printf "    %-10s%-39s %-10s %-6s\\n" "Uptime:" "${system_uptime}" "Users logged in:" "${logged_in}%"
+    printf "    %-10s%-39s %-10s %-6s\\n" "Uptime:" "${system_uptime}" "Users logged in:" "${logged_in}"
 
     # CPU temp, load, percentage
     printf "    %-10s${temp_heatmap}%-10s${reset_text} %-10s${cpu_load_1_heatmap}%-4s${reset_text}, ${cpu_load_5_heatmap}%-4s${reset_text}, ${cpu_load_15_heatmap}%-7s${reset_text} %-10s %-6s\\n" "CPU Temp:" "${temperature}" "CPU Load:" "${cpu_load[0]}" "${cpu_load[1]}" "${cpu_load[2]}" "CPU Load:" "${cpu_percent}%"
