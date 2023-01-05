@@ -22,26 +22,26 @@ function secs_to_human() {
 }
 
 function ensure_sudo() {
-  if sudo -n true 2>/dev/null; then
-    true
-  else
-    echo
-    echo -ne "This script requires admin access. Please enter your Admin "
-    sudo true
-    if [ $? -eq 0 ]; then
-      true
+    if sudo -n true 2>/dev/null; then
+        true
     else
-      false
+        echo
+        echo -ne "This script requires admin access. Please enter your Admin "
+        sudo true
+        if [ $? -eq 0 ]; then
+            true
+        else
+            false
+        fi
     fi
-  fi
 }
 
 function decode_path() {
-  echo "$1" | sed "s/:-homedir-:/$(echo ${HOMEDIR}/ | sed 's|\/|\\/|g')/g" | sed "s/::/\//g"
+    echo "$1" | sed "s/:-homedir-:/$(echo ${HOMEDIR}/ | sed 's|\/|\\/|g')/g" | sed "s/::/\//g"
 }
 
 function encode_path {
-  echo "$1" | sed "s/$(echo ${HOMEDIR}/ | sed 's|\/|\\/|g')/:-homedir-:/g" | sed "s/\//::/g"
+    echo "$1" | sed "s/$(echo ${HOMEDIR}/ | sed 's|\/|\\/|g')/:-homedir-:/g" | sed "s/\//::/g"
 }
 
 START_SEC=$(date +%s)

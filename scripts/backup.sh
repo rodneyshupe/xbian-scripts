@@ -22,26 +22,26 @@ function secs_to_human() {
 }
 
 function ensure_sudo() {
-  if sudo -n true 2>/dev/null; then
-    true
-  else
-    echo
-    echo -ne "This script requires admin access. Please enter your Admin "
-    sudo true
-    if [ $? -eq 0 ]; then
-      true
+    if sudo -n true 2>/dev/null; then
+        true
     else
-      false
+        echo
+        echo -ne "This script requires admin access. Please enter your Admin "
+        sudo true
+        if [ $? -eq 0 ]; then
+            true
+        else
+            false
+        fi
     fi
-  fi
 }
 
 function decode_path() {
-  echo "$1" | sed "s/:-homedir-:/$(echo ${HOMEDIR}/ | sed 's|\/|\\/|g')/g" | sed "s/::/\//g"
+    echo "$1" | sed "s/:-homedir-:/$(echo ${HOMEDIR}/ | sed 's|\/|\\/|g')/g" | sed "s/::/\//g"
 }
 
 function encode_path {
-  echo "$1" | sed "s/$(echo ${HOMEDIR}/ | sed 's|\/|\\/|g')/:-homedir-:/g" | sed "s/\//::/g"
+    echo "$1" | sed "s/$(echo ${HOMEDIR}/ | sed 's|\/|\\/|g')/:-homedir-:/g" | sed "s/\//::/g"
 }
 
 START_SEC=$(date +%s)
@@ -68,20 +68,20 @@ sudo apt list --installed 2>/dev/null | sudo cut -d '/' -f 1 > .installed_packag
 sudo cp /etc/apt/sources.list ::etc::apt::sources.list
 
 backup_files=( /etc/ssh/sshd_config \
-  "${HOMEDIR}/.ssh" \
-  /etc/samba/smb.conf \
-  /etc/samba/shares.conf \
-  /etc/fstab \
-  /etc/hostname \
-  /etc/hosts \
-  "${HOMEDIR}/.scripts" \
-  "${HOMEDIR}/.nanorc" \
-  "${HOMEDIR}/.nano" \
-  "${HOMEDIR}/.bashrc" \
-  /usr/bin/kodi-rpc \
-  "${HOMEDIR}/.config/kodi-rpc.conf" \
-  "${HOMEDIR}/.config/rclone/rclone.conf" \
-  )
+    "${HOMEDIR}/.ssh" \
+    /etc/samba/smb.conf \
+    /etc/samba/shares.conf \
+    /etc/fstab \
+    /etc/hostname \
+    /etc/hosts \
+    "${HOMEDIR}/.scripts" \
+    "${HOMEDIR}/.nanorc" \
+    "${HOMEDIR}/.nano" \
+    "${HOMEDIR}/.bashrc" \
+    /usr/bin/kodi-rpc \
+    "${HOMEDIR}/.config/kodi-rpc.conf" \
+    "${HOMEDIR}/.config/rclone/rclone.conf" \
+    )
 #/usr/bin/kodi-update \
 #TODO: Implement new kodi-remove-watched \
 #/usr/bin/kodi-remove-watched \
