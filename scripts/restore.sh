@@ -69,7 +69,7 @@ if [ -d system ]; then
     # Apt sources file
     if [ -f ::etc::apt::sources.list ]; then
         echo "Restoring package sources..."
-        sudo apt-get -qq update
+        sudo apt-get --quiet --quiet update
         sudo mv ::etc::apt::sources.list /etc/apt/sources.list && sudo apt-get --quiet update
     fi
 
@@ -83,7 +83,7 @@ if [ -d system ]; then
         while IFS= read -r package_name; do
             if ! cat "${tmp_installed_list}" | grep "^${package_name}$" > /dev/null ; then
                 echo "   Installing ${package_name}..."
-                #sudo apt-get -qq -y install ${package_name}
+                #sudo apt-get --yes --quiet --quiet install ${package_name}
             fi
         done < ".installed_packages"
         rm "${tmp_installed_list}"

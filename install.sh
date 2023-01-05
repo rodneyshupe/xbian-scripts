@@ -12,7 +12,9 @@ sudo true
 
 # Update and install essentials
 echo "Update and Install Essentials"
-sudo apt-get update >/dev/null && sudo apt-get -y upgrade >/dev/null && sudo apt-get -y install cron htop jq curl zip unzip logrotate mariadb-client >/dev/null
+sudo apt-get --quiet --quiet update \
+    && sudo apt-get --yes --quiet --quiet upgrade \
+    && sudo apt-get --yes --quiet --quiet install cron htop jq curl zip unzip logrotate mariadb-client
 
 # Install rclone
 echo "Install rclone..."
@@ -50,10 +52,8 @@ mkdir -p "$HOME/.config/rclone" 2>/dev/null
 # Make Log Directory
 sudo mkdir -p /var/log/$USER 2>/dev/null
 
-# 
-echo "Log"
-sudo apt-get install -y logrotate
-
+# Setup Logrotate
+echo "Setup Logrotate..."
 [ ! -f "/etc/logrotate.d/$USER" ] && sudo tee "/etc/logrotate.d/$USER" > /dev/null <<EOF
 /var/log/$USER/kodi-removed-watched.log {
     rotate 4
