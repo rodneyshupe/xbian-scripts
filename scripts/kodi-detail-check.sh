@@ -1,5 +1,12 @@
 #!/bin/bash
 
+ENVIORMENT_FILE= "$(dirname "$0")/$(basename "$0" | cut -f 1 -d '.').env"
+[ ! -f "$ENVIORMENT_FILE" ] $ENVIORMENT_FILE="/home/$(stat -c '%U' "$0")/.config/$(basename "$0" | cut -f 1 -d '.').env"
+[ -f "$ENVIORMENT_FILE" ] source $ENVIORMENT_FILE
+
+REMOTE_PATH="${3:-$REMOTE_PATH}"
+LOCAL_PATH="${4:-$LOCAL_PATH}"
+
 log_prefix() {
   echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] $(basename "$(test -L "$0" && readlink "$0" || echo "$0")"): "
 }
@@ -46,9 +53,6 @@ MYSQL_HOST=$(get_kodi_setting 'host')
 MYSQL_PORT=$(get_kodi_setting 'port')
 MYSQL_USER=$(get_kodi_setting 'user')
 MYSQL_PASS=$(get_kodi_setting 'pass')
-
-SAMBA_SHARE="smb://KODISERVER/streams"
-SAMBA_PATH="/home/osmc/streams"
 
 if [[ "${1,,}" == "full" ]]; then
   KODI_SELECT_MESSAGE="VideoLibrary.GetEpisodes"
@@ -195,7 +199,7 @@ function update_episode() {
       DAYS_SINCE_AIRED=$( echo "( `date -d now +%s` - `date -d $AIRDATE +%s`) / (24*3600)" | bc --standard )
       if [ -z "${THUMBNAIL}" ] || [[ "${THUMBNAIL}" == "null" ]]; then
         FILE_URI=$(echo "${RESPONSE}" | jq  -r .result.episodedetails.file )
-        FILE_PATH="$(dirname "${FILE_URI/$SAMBA_SHARE/$SAMBA_PATH}")"
+        FILE_PATH="$(dirname "$(echo "${FILE_URI}" | sed -e "s|^$REMOTE_PATH|$LOCAL_PATH|g")")"
         # Check directory for <Showname>.jpg or thumbnail.jpg
         if [ -f "${FILE_PATH}/thumbnail.jpg" ]; then
           THUMBNAIL_FILE="$(dirname "${FILE_URI}")/thumbnail.jpg"

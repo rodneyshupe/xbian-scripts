@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
-SAMBA_PATH="smb://medianas.milliways/media/videos/tv"
-LOCAL_PATH="/mnt/media/videos/tv"
+ENVIORMENT_FILE= "$(dirname "$0")/$(basename "$0" | cut -f 1 -d '.').env"
+[ ! -f "$ENVIORMENT_FILE" ] $ENVIORMENT_FILE="/home/$(stat -c '%U' "$0")/.config/$(basename "$0" | cut -f 1 -d '.').env"
+[ -f "$ENVIORMENT_FILE" ] source $ENVIORMENT_FILE
+
+REMOTE_PATH="${3:-$REMOTE_PATH}"
+LOCAL_PATH="${4:-$LOCAL_PATH}"
 
 log_prefix() {
   echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] $(basename "$(test -L "$0" && readlink "$0" || echo "$0")"): "
@@ -56,7 +60,7 @@ echo "$(log_prefix)Start Time: $(date)"
 echo "$(log_prefix)Pulling file list from server..."
 find "${LOCAL_PATH}" -type f \
 | grep -iE "\.webm$|\.flv$|\.vob$|\.ogg$|\.ogv$|\.drc$|\.gifv$|\.mng$|\.avi$|\.mov$|\.qt$|\.wmv$|\.yuv$|\.rm$|\.rmvb$|/.asf$|\.amv$|\.mp4$|\.m4v$|\.mp4$|\.m.?v$|\.svi$|\.3gp$|\.flv$|\.f4v$" \
-| sed -e "s|^$LOCAL_PATH|$SAMBA_PATH|g" > $TMP_FILELIST_LOCAL
+| sed -e "s|^$LOCAL_PATH|$REMOTE_PATH|g" > $TMP_FILELIST_LOCAL
 
 export MYSQL_PWD=$MYSQL_PASS
 LATEST_DB_QUERY="SELECT table_schema FROM information_schema.TABLES WHERE table_schema LIKE 'MyVideos%' GROUP BY table_schema;"
