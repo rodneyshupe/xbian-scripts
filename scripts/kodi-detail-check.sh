@@ -35,8 +35,6 @@ get_kodi_setting() {
   fi
 
   # Extract the value of the node using grep and sed
-  echo $regex
-  echo $node
   tr '\n' ' ' <"${file}" | grep --text --only-matching --ignore-case --regexp "$regex" | sed "s/.*<${node}>\(.*\)<\/${node}>.*/\1/i"
 }
 
