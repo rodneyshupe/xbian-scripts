@@ -23,7 +23,8 @@ get_kodi_setting() {
   local parent_node="${2:-videodatabase}"
   local file="${3}"
   if [ -z ${file} ] || [ ! -f ${file} ]; then
-    file="/home/xbian/.kodi/userdata/advancedsettings.xml"
+    kodi_user="$(ps aux | grep kodi | grep -v grep | head -n1 | cut -d ' ' -f1)"
+    file="/home/${kodi_user}/.kodi/userdata/advancedsettings.xml"
   fi
 
   # Set the regular expression to match the node

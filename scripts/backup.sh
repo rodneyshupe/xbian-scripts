@@ -2,7 +2,9 @@
 
 HOMEUSER="$(stat -c '%U' "$0")"
 HOMEDIR="/home/${HOMEUSER}"
-OS_DEFAULT_USER_DIR="/home/xbian"
+OS_DEFAULT_USER="$(getent passwd 1000 | cut -d: -f1)"
+[ -z $OS_DEFAULT_USER ] && OS_DEFAULT_USER='xbian'
+OS_DEFAULT_USER_DIR="/home/${OS_DEFAULT_USER}"
 RCLONE_DATA_PATH="${HOMEDIR}/.config/rclone"
 RCLONE_BIN="/usr/bin/rclone"
 RCLONE_REMOTE_PATH="backups:/Xbian"
