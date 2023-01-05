@@ -67,7 +67,7 @@ check_connection() {
 
 echo "Services:"
 echo "    Kodi:          $(/sbin/status xbmc 2>/dev/null | grep 'start/running' >/dev/null 2>&1 && echo "${color_ok}   Active ${color_normal}" || echo "${color_fail}   Stopped   ${color_normal}") Version: $(kodi_version)"
-echo "    MySQL DB:      $(export MYSQL_PWD=kodi; mysqladmin --user kodi --host $(get_kodi_setting 'host') --post $(get_kodi_setting 'post') ping > /dev/null 2>&1 && echo "${color_ok}   Active ${color_normal}" || echo "${color_fail}   Stopped   ${color_normal}") Host: $(get_kodi_setting)"
+echo "    MySQL DB:      $(export MYSQL_PWD=$(get_kodi_setting 'pass'); mysqladmin --user $(get_kodi_setting 'user') --host $(get_kodi_setting 'host') --port $(get_kodi_setting 'port') ping > /dev/null 2>&1 && echo "${color_ok}   Active ${color_normal}" || echo "${color_fail}   Stopped   ${color_normal}") Host: $(get_kodi_setting)"
 echo "    Media Share:   $([ -d $MOUNT_CHECK ] && echo "${color_ok}   Active ${color_normal}" || echo "${color_fail} Unavailable ${color_normal}")"
 echo "    VNC Server:    $(/sbin/status vnc-server 2>/dev/null | grep 'start/running' >/dev/null 2>&1 && echo "${color_ok}   Active ${color_normal}" || echo "${color_fail}   Stopped   ${color_normal}")"
 echo
