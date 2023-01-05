@@ -46,7 +46,44 @@ mkdir -p "$HOME/.scripts" 2>/dev/null
 mkdir -p "$HOME/.nano" 2>/dev/null
 mkdir -p "$HOME/.config/rclone" 2>/dev/null
 # Make Log Directory
-sudo mkdir -p /var/log/milliways 2>/dev/null
+sudo mkdir -p /var/log/$USER 2>/dev/null
+
+# 
+echo "Log"
+sudo apt-get install -y logrotate
+
+[ ! -f "/etc/logrotate.d/$USER" ] && sudo tee "/etc/logrotate.d/$USER" > /dev/null <<EOF
+/var/log/$USER/kodi-removed-watched.log {
+  rotate 4
+  weekly
+  missingok
+  notifempty
+}
+/var/log/$USER/kodi-episode-check.log {
+  rotate 4
+  weekly
+  missingok
+  notifempty
+}
+/var/log/$USER/sonarr-unmonitor-watched.log {
+  rotate 4
+  weekly
+  missingok
+  notifempty
+}
+/var/log/$USER/kodi-detail-check.log {
+  rotate 4
+  weekly
+  missingok
+  notifempty
+}
+/var/log/$USER/backup.log {
+  rotate 4
+  weekly
+  missingok
+  notifempty
+}
+EOF
 
 # Copy Utility Commands
 echo "Copy Utility Commands..."
@@ -92,3 +129,10 @@ curl -sSL "$GITHUB_REPO_URL/scripts/update-motd.d/15-logo.sh" | sudo tee /etc/up
 curl -sSL "$GITHUB_REPO_URL/scripts/update-motd.d/20-status.sh" | sudo tee /etc/update-motd.d/20-status > /dev/null
 sudo chmod +x /etc/update-motd.d/15-logo
 sudo chmod +x /etc/update-motd.d/20-status
+
+# To run the scripts:
+# sudo $HOME/.scripts/kodi-remove-watched.sh | sudo tee -a /var/log/$USER/kodi-removed-watched.log
+# sudo $HOME/.scripts/kodi-episode-check.sh | sudo tee -a /var/log/$USER/kodi-episode-check.log
+# sudo $HOME/.scripts/sonarr-unmonitor-watched.sh | sudo tee -a /var/log/$USER/sonarr-unmonitor-watched.log
+# sudo $HOME/.scripts/kodi-detail-check.sh | sudo tee -a /var/log/$USER/kodi-detail-check.log
+# sudo $HOME/.scripts/backup.sh | sudo tee -a /var/log/$USER/backup.log
