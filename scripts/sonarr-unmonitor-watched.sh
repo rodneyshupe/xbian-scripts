@@ -24,6 +24,7 @@ get_kodi_setting() {
   local file="${3}"
   if [ -z ${file} ] || [ ! -f ${file} ]; then
     kodi_user="$(ps aux | grep kodi | grep -v grep | head -n1 | cut -d ' ' -f1)"
+    [ -z $kodi_user ] && kodi_user="$(getent passwd 1000 | cut -d: -f1)"
     file="/home/${kodi_user}/.kodi/userdata/advancedsettings.xml"
   fi
 
