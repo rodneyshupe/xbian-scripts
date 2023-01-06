@@ -14,7 +14,7 @@ sudo true
 echo "Update and Install Essentials"
 sudo apt-get --quiet --quiet update \
     && sudo apt-get --yes --quiet --quiet upgrade \
-    && sudo apt-get --yes --quiet --quiet install cron htop jq curl zip unzip logrotate mariadb-client
+    && sudo apt-get --yes --quiet --quiet install screen cron zip unzip wget curl nano jq logrotate mariadb-client
 
 # Install rclone
 echo "Install rclone..."
@@ -109,6 +109,7 @@ curl -sSL "$GITHUB_REPO_URL/scripts/kodi-detail-check.sh"   > "$HOME/.scripts/ko
 curl -sSL "$GITHUB_REPO_URL/scripts/kodi-remove-watched.sh" > "$HOME/.scripts/kodi-remove-watched.sh"
 curl -sSL "$GITHUB_REPO_URL/scripts/sonarr-unmonitor-watched.sh" > "$HOME/.scripts/sonarr-unmonitor-watched.sh"
 curl -sSL "$GITHUB_REPO_URL/scripts/backup.sh"  > "$HOME/.scripts/backup.sh"
+curl -sSL "$GITHUB_REPO_URL/scripts/backup-image.sh"  > "$HOME/.scripts/backup-image.sh"
 curl -sSL "$GITHUB_REPO_URL/scripts/restore.sh" > "$HOME/.scripts/restore.sh"
 curl -sSL "$GITHUB_REPO_URL/scripts/pretrip.sh" > "$HOME/.scripts/pretrip.sh"
 
