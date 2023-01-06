@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# Uncomment the commands below to enable DEBUGGING
+# exec 5> $(basename "$0" | sed -r 's|^(.*?)\.\w+$|\1|').log" # Log to file with same name as script
+# #exec 5> >(logger -t $0) # Log to syslog
+# BASH_XTRACEFD="5"
+# PS4='$LINENO: '
+# set -x
+
 HOMEUSER="$(stat -c '%U' "$0")"
 HOMEDIR="/home/${HOMEUSER}"
 OS_DEFAULT_USER="$(getent passwd 1000 | cut -d: -f1)"
@@ -13,8 +20,34 @@ SYSTEM_BACKUP="system"
 KODIDB_BACKUP="kodidb"
 KODIUSERDATA_BACKUP="kodiuserdata"
 
-MYSQL_USER=kodi
-MYSQL_PASS=kodi
+# Function to extract the value of a node from an XML file
+get_kodi_setting() {
+    # Set the variables for the node and parent node names
+    local node="${1:-host}"
+    local parent_node="${2:-videodatabase}"
+    local file="${3}"
+    if [ -z ${file} ] || [ ! -f ${file} ]; then
+        kodi_user="$(ps aux | grep kodi | grep -v grep | head -n1 | cut -d ' ' -f1)"
+        [ -z $kodi_user ] && kodi_user="$(getent passwd 1000 | cut -d: -f1)"
+        file="/home/${kodi_user}/.kodi/userdata/advancedsettings.xml"
+    fi
+
+    # Set the regular expression to match the node
+    local regex="<${node}>.*</${node}>"
+
+    # If a parent node was specified, add it to the regular expression
+    if [[ -n "$parent_node" ]]; then
+        regex="<${parent_node}>.*${regex}.*</${parent_node}>"
+    fi
+
+    # Extract the value of the node using grep and sed
+    tr '\n' ' ' <"${file}" | grep --text --only-matching --ignore-case --regexp "$regex" | sed "s/.*<${node}>\(.*\)<\/${node}>.*/\1/i"
+}
+
+MYSQL_USER="$(get_kodi_setting 'user')"
+MYSQL_PASS="$(get_kodi_setting 'pass')"
+MYSQL_HOST="$(get_kodi_setting 'host')"
+MYSQL_PORT="$(get_kodi_setting 'post')"
 
 function secs_to_human() {
     #echo "$(( ${1} / 3600 ))h $(( (${1} / 60) % 60 ))m $(( ${1} % 60 ))s"
@@ -116,16 +149,22 @@ export MYSQL_PWD=$MYSQL_PASS
 LATEST_DB_QUERY="SELECT table_schema FROM information_schema.TABLES WHERE table_schema LIKE 'MyVideos%' GROUP BY table_schema;"
 MYSQL_KODI_VIDEOS_DB=$(mysql --skip-column-names \
                              --user=$MYSQL_USER \
+                             --host=$MYSQL_HOST \
+                             --port=$MYSQL_PORT \
                              --execute="$LATEST_DB_QUERY" \
                        | sort | tail --lines=1)
 
 LATEST_DB_QUERY="SELECT table_schema FROM information_schema.TABLES WHERE table_schema LIKE 'MyMusic%' GROUP BY table_schema;"
 MYSQL_KODI_MUSIC_DB=$(mysql --skip-column-names \
                              --user=$MYSQL_USER \
+                             --host=$MYSQL_HOST \
+                             --port=$MYSQL_PORT \
                              --execute="$LATEST_DB_QUERY" \
                       | sort | tail --lines=1)
 
 mysqldump --user=$MYSQL_USER \
+          --host=$MYSQL_HOST \
+          --port=$MYSQL_PORT \
           --databases $MYSQL_KODI_VIDEOS_DB $MYSQL_KODI_MUSIC_DB \
           > kodi_backup.sql
 
