@@ -3,9 +3,12 @@
 #    15-header - display logo
 #
 
+# To be stored in /etc/update-motd.d/15-logo
+
 export TERM=xterm-256color
 
-host="$(hostname --fqdn)"
+host="$(hostname --all-fqdns | tr '[:upper:]' '[:lower:]')"
+[ -z "${host}" ] && host="$(hostname --fqdn)"
 [ -z "${host}" ] && host="$(uname -n)"
 host="${host}                            "
 host="$(tput bold)$(tput setaf 3)${host:0:28}$(tput sgr0)"
