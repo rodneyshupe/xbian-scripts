@@ -55,33 +55,15 @@ sudo mkdir -p /var/log/$USER 2>/dev/null
 # Setup Logrotate
 echo "Setup Logrotate..."
 [ ! -f "/etc/logrotate.d/$USER" ] && sudo tee "/etc/logrotate.d/$USER" > /dev/null <<EOF
-/var/log/$USER/kodi-removed-watched.log {
-    rotate 4
+/var/log/$USER/kodi*.log /var/log/$USER/sonarr-unmonitor-watched.log /var/log/$USER/backup.log {
+    rotate 12
     weekly
     missingok
     notifempty
 }
-/var/log/$USER/kodi-episode-check.log {
-    rotate 4
-    weekly
-    missingok
-    notifempty
-}
-/var/log/$USER/sonarr-unmonitor-watched.log {
-    rotate 4
-    weekly
-    missingok
-    notifempty
-}
-/var/log/$USER/kodi-detail-check.log {
-    rotate 4
-    weekly
-    missingok
-    notifempty
-}
-/var/log/$USER/backup.log {
-    rotate 4
-    weekly
+/var/log/$USER/backup-image.log {
+    rotate 12
+    monthly
     missingok
     notifempty
 }
