@@ -7,8 +7,10 @@ ENVIORMENT_FILE= "$(dirname "$0")/$(basename "$0" | cut -f 1 -d '.').env"
 REMOTE_PATH="${3:-$REMOTE_PATH}"
 LOCAL_PATH="${4:-$LOCAL_PATH}"
 
+SHOW_PREFIX=1
+test -t 1 && SHOW_PREFIX=0
 log_prefix() {
-    test -t 1 || echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] $(basename "$(test -L "$0" && readlink "$0" || echo "$0")"): "
+    [ $SHOW_PREFIX -eq 1 ] && echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] $(basename "$(test -L "$0" && readlink "$0" || echo "$0")"): "
 }
 
 secs_to_human() {
