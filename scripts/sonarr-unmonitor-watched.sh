@@ -8,7 +8,7 @@ SONARR_API_URL="${1:-$SONARR_API_URL}"
 SONARR_API_KEY="${2:-$SONARR_API_KEY}"
 
 log_prefix() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] $(basename "$(test -L "$0" && readlink "$0" || echo "$0")"): "
+    test -t 1 || echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] $(basename "$(test -L "$0" && readlink "$0" || echo "$0")"): "
 }
 
 function secs_to_human() {

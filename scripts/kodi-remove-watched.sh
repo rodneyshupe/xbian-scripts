@@ -44,7 +44,7 @@ KODI_USER="$(ps aux | grep kodi | grep -v grep | head -n1 | cut -d ' ' -f1)"
 SQL_EXCLUDE="%/archive/%"
 
 log_prefix() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] $(basename "$(test -L "$0" && readlink "$0" || echo "$0")"): "
+    test -t 1 || echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] $(basename "$(test -L "$0" && readlink "$0" || echo "$0")"): "
 }
 
 secs_to_human() {
