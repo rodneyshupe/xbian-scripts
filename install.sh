@@ -43,6 +43,16 @@ PASS="kodi"
 EOF
 [ ! -f "/usr/bin/kodi-rpc.conf" ] && sudo cp "$HOME/.config/kodi-rpc.conf" /usr/bin/kodi-rpc.conf
 
+# setup backups
+[ ! -f /etc/default/xbian-snap.ori ] && sudo cp /etc/default/xbian-snap /etc/default/xbian-snap.ori
+sudo sed -i 's/IMGPLAN=.*/IMGPLAN=monthly/' /etc/default/xbian-snap
+sudo sed -i 's/IMGTYPE=.*/IMGTYPE=file/' /etc/default/xbian-snap
+sudo sed -i 's/IMGDEST=.*/IMGDEST=\/mnt\/storage\/backups\/xbian\/xbian_backup.img/' /etc/default/xbian-snap
+sudo sed -i 's/IMGKEEP=.*/IMGKEEP=5/' /etc/default/xbian-snap
+sudo sed -i 's/HOMEPLAN=.*/HOMEPLAN=weekly/' /etc/default/xbian-snap
+sudo sed -i 's/HOMEDEST=.*/HOMEDEST=\/mnt\/storage\/backups\/xbian\/xbian_home_backup.img.gz/' /etc/default/xbian-snap
+sudo sed -i 's/HOMEKEEP=.*/HOMEKEEP=5/' /etc/default/xbian-snap
+
 # Create Directories
 echo "Create Directories..."
 mkdir -p "$HOME/.ssh" 2>/dev/null
