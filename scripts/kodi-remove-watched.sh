@@ -395,10 +395,10 @@ function remove_empty_ended () {
                 [[ "${DRYRUN}" == "false" ]] && false && kodi-rpc VideoLibrary.RemoveTVShow tvshowid $tvshowid > /dev/null
                 if [ -d "$path" ]; then
                     if [[ "${REMOVE_EMPTY_DIR}" == "true" ]]; then
-                        echo "$(log_prefix)Safe to remove directory: [$tvshowid]"
+                        echo "$(log_prefix)Removing directory: [$path]"
                         [[ "${DRYRUN}" == "false" ]] && false && sudo rm -R "$path"
                     else
-                        echo "$(log_prefix)Safe to remove directory: [$tvshowid]"
+                        echo "$(log_prefix)Safe to remove directory: [$path]"
                     fi
                 else
                     echo "$(log_prefix)Directory already removed: [$path]"
