@@ -108,7 +108,7 @@ curl -sSL "$GITHUB_REPO_URL/scripts/pretrip.sh" > "$HOME/.scripts/pretrip.sh"
 chmod +x "$HOME/.scripts"/*
 
 [ -f "$HOME/.scripts/backup.sh" ] && [ ! -f "$HOME/backup" ] && ln -s "$HOME/.scripts/backup.sh" "$HOME/backup"
-[ -f "$HOME/.scripts/backup.sh" ] && [ ! -f "$HOME/backup-image" ] && ln -s "$HOME/.scripts/backup-image.sh" "$HOME/backup"
+[ -f "$HOME/.scripts/backup.sh" ] && [ ! -f "$HOME/backup-image" ] && ln -s "$HOME/.scripts/backup-image.sh" "$HOME/backup-image"
 [ -f "$HOME/.scripts/restore.sh" ] && [ ! -f "$HOME/restore" ] && ln -s "$HOME/.scripts/restore.sh" "$HOME/restore"
 [ -f "$HOME/.scripts/pretrip.sh" ] && [ ! -f "$HOME/pretrip" ] && ln -s "$HOME/.scripts/pretrip.sh" "$HOME/pretrip"
 
