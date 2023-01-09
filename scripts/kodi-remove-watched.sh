@@ -377,7 +377,6 @@ function remove_empty_ended () {
               AND p.strPath NOT LIKE '${SQL_EXCLUDE}'
             ;
         " > "${PATH_QUERY}"
-        cat  "${PATH_QUERY}"
         SQL_QUERY="$(cat "${PATH_QUERY}")" && rm "${PATH_QUERY}"
 
         PATH_LIST="$(mktemp --tmpdir -- tmp.lst.XXXXXXXXXX)"
