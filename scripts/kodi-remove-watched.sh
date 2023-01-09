@@ -354,11 +354,12 @@ function remove_ended_files () {
 }
 
 function remove_empty_ended () {
-    local _MYSQL_HOST="${1:-localhost}"
-    local _MYSQL_PORT="${2:-3306}"
-    local _MYSQL_USER="${3:-kodi}"
-    local _MYSQL_PASS="${4:-kodi}"
+    local _MYSQL_HOST="${1:-$(get_kodi_setting 'host')}"
+    local _MYSQL_PORT="${2:-$(get_kodi_setting 'port')}"
+    local _MYSQL_USER="${3:-$(get_kodi_setting 'user')}"
+    local _MYSQL_PASS="${4:-$(get_kodi_setting 'pass')}"
     local _KODI_DB="$5"
+    local _DEBUG="${6:-true}"
 
     echo "$(log_prefix)Removing empty ended series:"
 
@@ -391,20 +392,20 @@ function remove_empty_ended () {
 
             files=$(shopt -s nullglob dotglob; echo "$path"[a-zA-Z0-9]*)
             if [ ! -d "$path" ] || ! (( ${#files} )); then
-                echo "$(log_prefix)Safe to remove from library: [$tvshowid]"
+                echo -n "$(log_prefix)Safe to remove from library: [$tvshowid] "
                 [[ "${DRYRUN}" == "false" ]] && false && kodi-rpc VideoLibrary.RemoveTVShow tvshowid $tvshowid > /dev/null
                 if [ -d "$path" ]; then
                     if [[ "${REMOVE_EMPTY_DIR}" == "true" ]]; then
-                        echo "$(log_prefix)Removing directory: [$path]"
-                        [[ "${DRYRUN}" == "false" ]] && false && sudo rm -R "$path"
+                        echo "Removing directory: [$path]"
+                        [[ "${DRYRUN}" == "false" ]] && [[ "${_DEBUG}" == "false" ]] && sudo rm -R "$path"
                     else
-                        echo "$(log_prefix)Safe to remove directory: [$path]"
+                        echo "Safe to remove directory: [$path]"
                     fi
                 else
-                    echo "$(log_prefix)Directory already removed: [$path]"
+                    echo " Directory already removed: [$path]"
                 fi
             else
-                echo "$(log_prefix)Skipping non-empty directory: $path"
+                [[ "${_DEBUG}" == "true" ]] && echo "$(log_prefix)Skipping non-empty directory: $path"
             fi
         done < "$PATH_LIST"
         rm "$PATH_LIST"
