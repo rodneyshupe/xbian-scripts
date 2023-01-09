@@ -90,6 +90,9 @@ function parse_args() {
             o)
                 DISPLAY_OPTIONS="true"
                 ;;
+            e)
+                REMOVE_EMPTY_DIR="true"
+                ;;
             \?)
                 echo "Invalid option: -$OPTARG" >&2
                 echo ""
@@ -350,6 +353,59 @@ function remove_ended_files () {
     done
 }
 
+function remove_empty_ended () {
+    local _MYSQL_HOST="${1:-localhost}"
+    local _MYSQL_PORT="${2:-3306}"
+    local _MYSQL_USER="${3:-kodi}"
+    local _MYSQL_PASS="${4:-kodi}"
+    local _KODI_DB="$5"
+
+    echo "$(log_prefix)Removing empty ended series:"
+
+    all_series_json | jq '.[] | select(.status=="ended") | .path' | \
+    while read partial_path; do
+        partial_path=`sed -e 's/^"//' -e 's/"$//' -e 's/\/$//' <<<"$partial_path"`
+
+        #Get file path and episode id from supplied partial_path
+        PATH_QUERY="$(mktemp --tmpdir -- tmp.sql.XXXXXXXXXX)"
+        echo "
+            SELECT CONCAT(REPLACE(p.strPath, '${REMOTE_PATH}/', '${LOCAL_PATH}/') , '|', t.idShow) AS 'line'
+            FROM tvshow t
+            JOIN tvshowlinkpath tl on tl.idShow = t.idShow
+            JOIN path p ON p.idPath = tl.idPath
+            WHERE p.strPath LIKE \"${REMOTE_PATH}${partial_path}/%\"
+              AND p.strPath NOT LIKE '${SQL_EXCLUDE}'
+            ;
+        " > "${PATH_QUERY}"
+        cat  "${PATH_QUERY}"
+        SQL_QUERY="$(cat "${PATH_QUERY}")" && rm "${PATH_QUERY}"
+
+        PATH_LIST="$(mktemp --tmpdir -- tmp.lst.XXXXXXXXXX)"
+        mysql_query "${SQL_QUERY}" "${_MYSQL_HOST}" "${_MYSQL_PORT}" "${_MYSQL_USER}" "${_MYSQL_PASS}" "${_KODI_DB}" \
+            > "${PATH_LIST}" \
+            || { echo >&2 "ERROR: mysql Query Failed.  Aborting."; exit 2; }
+
+        while read line; do
+            IFS="|" read -ra PARTS <<< "$line"
+            path="${PARTS[0]}"
+            tvshowid=${PARTS[1]}
+
+            files=$(shopt -s nullglob dotglob; echo "$path"[a-zA-Z0-9]*)
+            if [ ! -d "$path" ] || ! (( ${#files} )); then
+                echo "$(log_prefix)Directory Empty safe to remove from library empty:$path"
+                if [[ "${DRYRUN}" == "false" ]] || false; then
+                    kodi-rpc VideoLibrary.RemoveTVShow tvshowid $tvshowid > /dev/null
+
+                    [[ "${REMOVE_EMPTY_DIR}" == "true" ]] && [ -d "$path" ] && sudo rm -R "$path"
+                fi
+            else
+                echo "$(log_prefix)Skipping non-empty directory: $path"
+            fi
+        done < "$PATH_LIST"
+        rm "$PATH_LIST"
+    done
+}
+
 START_SEC=$(date +%s)
 echo "$(log_prefix)Start Time: $(date)"
 
@@ -364,6 +420,7 @@ DRYRUN="false"
 DO_CLEAN="true"
 DO_SCAN="true"
 DISPLAY_OPTIONS="false"
+REMOVE_EMPTY_DIR="false"
 
 parse_args $@
 
@@ -377,6 +434,7 @@ if [ ! -d "${LOCAL_PATH}" ]; then
     if [ ! -d "${LOCAL_PATH}" ]; then
         echo "$(log_prefix)Problem Mounting Local Path!"
         DRYRUN="true"
+        REMOVE_EMPTY_DIR="false"
         DO_CLEAN="false"
     fi
 fi
@@ -389,6 +447,8 @@ kodi_db=$(get_kodi_myvideo_db "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "$
 remove_watched_files "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}" "${kodi_db}"
 
 remove_ended_files "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}" "${kodi_db}"
+
+remove_empty_ended "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}" "${kodi_db}"
 
 if [ "$DO_SCAN" = "true" ]; then
     echo "$(log_prefix)Calling Kodi API for Scan..."
