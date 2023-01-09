@@ -7,6 +7,8 @@
 # PS4='$LINENO: '
 # set -x
 
+FLAG_CREATE_IMG=1 #TODO: Make this a parameter to get passed in
+
 HOMEUSER="$(stat -c '%U' "$0")"
 HOMEDIR="/home/${HOMEUSER}"
 OS_DEFAULT_USER="$(getent passwd 1000 | cut -d: -f1)"
@@ -47,7 +49,13 @@ get_kodi_setting() {
 MYSQL_USER="$(get_kodi_setting 'user')"
 MYSQL_PASS="$(get_kodi_setting 'pass')"
 MYSQL_HOST="$(get_kodi_setting 'host')"
-MYSQL_PORT="$(get_kodi_setting 'post')"
+MYSQL_PORT="$(get_kodi_setting 'port')"
+
+SHOW_PREFIX=1
+test -t 1 && SHOW_PREFIX=0
+log_prefix() {
+    [ $SHOW_PREFIX -eq 1 ] && echo "[$(date +'%Y-%m-%d %H:%M:%S %Z')] $(basename "$(test -L "$0" && readlink "$0" || echo "$0")"): "
+}
 
 function secs_to_human() {
     #echo "$(( ${1} / 3600 ))h $(( (${1} / 60) % 60 ))m $(( ${1} % 60 ))s"
@@ -59,13 +67,8 @@ function ensure_sudo() {
         true
     else
         echo
-        echo -ne "This script requires admin access. Please enter your Admin "
-        sudo true
-        if [ $? -eq 0 ]; then
-            true
-        else
-            false
-        fi
+        echo "$(log_prefix)ERROR: This script requires admin access. Rerun with sudo."
+        exit 1;
     fi
 }
 
@@ -86,9 +89,48 @@ CURRENT_DIR="$PWD"
 
 cd "${HOMEDIR}"
 
+if [ $FLAG_CREATE_IMG -eq 1 ]; then
+    # create xbian backup
+    sudo xbian-config backuphome start > /tmp/backuphome.pid
+
+    msg="Creating xbian home backup: "
+    echo -n "$(log_prefix)Creating xbian home backup: "
+    # wait
+    sleep 5
+    count=5
+    if [ ! -f /tmp/backuphome.running ]; then
+        echo "$(log_prefix)"
+        echo "$(log_prefix)ERROR: Error backup not started: [$IMAGE_PATH]"
+        exit 1
+    fi
+
+    while [ -f /tmp/backuphome.running ]; do
+        if test -t 1; then
+            # Calculate the minutes and seconds
+            minutes=$((count / 60))
+            seconds=$((count % 60))
+
+            # Format the timer string
+            if [ "$seconds" -lt 10 ]; then
+                # Add a leading zero to the seconds if necessary
+                timer="$minutes:0$seconds"
+            else
+                timer="$minutes:$seconds"
+            fi
+
+            echo -ne "\r$msg$timer"
+        fi
+        sleep 1
+        ((count++))
+        [ $((count % 5)) -eq 0 ] && sudo xbian-config backuphome status > /dev/null
+    done
+    echo ""
+    sleep 5
+    sync; sync
+fi
+XBIAN_BACKUP_IMAGE="$(ls -t /xbmc-backup/xbian_backup_home_$(date +'%Y-%m-%d')*.btrfs.img.gz | head -1)"
 
 #Create a system backup
-
 echo "Creating backup of system files..."
 TEMP_DIR=$(mktemp -d -t "${SYSTEM_BACKUP}-XXXXXXXXXX")
 cd "${TEMP_DIR}"
@@ -101,23 +143,20 @@ sudo apt list --installed 2>/dev/null | sudo cut -d '/' -f 1 > .installed_packag
 sudo cp /etc/apt/sources.list ::etc::apt::sources.list
 
 backup_files=( /etc/ssh/sshd_config \
-    "${HOMEDIR}/.ssh" \
-    /etc/samba/smb.conf \
-    /etc/samba/shares.conf \
-    /etc/fstab \
-    /etc/hostname \
-    /etc/hosts \
-    "${HOMEDIR}/.scripts" \
-    "${HOMEDIR}/.nanorc" \
-    "${HOMEDIR}/.nano" \
-    "${HOMEDIR}/.bashrc" \
-    /usr/bin/kodi-rpc \
-    "${HOMEDIR}/.config/kodi-rpc.conf" \
-    "${HOMEDIR}/.config/rclone/rclone.conf" \
+        "${HOMEDIR}/.ssh" \
+        /etc/samba/smb.conf \
+        /etc/samba/shares.conf \
+        /etc/fstab \
+        /etc/hostname \
+        /etc/hosts \
+        "${HOMEDIR}/.scripts" \
+        "${HOMEDIR}/.nanorc" \
+        "${HOMEDIR}/.nano" \
+        "${HOMEDIR}/.bashrc" \
+        /usr/bin/kodi-rpc \
+        "${HOMEDIR}/.config/kodi-rpc.conf" \
+        "${HOMEDIR}/.config/rclone/rclone.conf" \
     )
-#/usr/bin/kodi-update \
-#TODO: Implement new kodi-remove-watched \
-#/usr/bin/kodi-remove-watched \
 
 for path in "${backup_files[@]}"; do
     if [ -e "${path}" ]; then
@@ -173,7 +212,6 @@ sudo tar --gzip --create --file="${HOMEDIR}/${KODIDB_BACKUP}.tar.gz" .
 cd "${HOMEDIR}"
 sudo rm -R "${TEMP_DIR}"
 
-
 echo "Archiving kodi userdata backups..."
 TEMP_DIR=$(mktemp -d -t "${KODIUSERDATA_BACKUP}-XXXXXXXXXX")
 cd "${TEMP_DIR}"
@@ -192,23 +230,23 @@ echo "Cycling Backups..."
 sudo ${RCLONE_BIN} deletefile "${RCLONE_REMOTE_PATH}/Past/${SYSTEM_BACKUP}.2.tar.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
 sudo ${RCLONE_BIN} deletefile "${RCLONE_REMOTE_PATH}/Past/${KODIDB_BACKUP}.2.tar.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
 sudo ${RCLONE_BIN} deletefile "${RCLONE_REMOTE_PATH}/Past/${KODIUSERDATA_BACKUP}.2.tar.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
-#sudo ${RCLONE_BIN} deletefile "${RCLONE_REMOTE_PATH}/Past/xbian_backup_home.btrfs.2.img.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
+sudo ${RCLONE_BIN} deletefile "${RCLONE_REMOTE_PATH}/Past/xbian_backup_home.btrfs.2.img.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
 
 sudo ${RCLONE_BIN} moveto "${RCLONE_REMOTE_PATH}/Past/${SYSTEM_BACKUP}.1.tar.gz" "${RCLONE_REMOTE_PATH}/Past/${SYSTEM_BACKUP}.2.tar.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
 sudo ${RCLONE_BIN} moveto "${RCLONE_REMOTE_PATH}/Past/${KODIDB_BACKUP}.1.tar.gz" "${RCLONE_REMOTE_PATH}/Past/${KODIDB_BACKUP}.2.tar.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
 sudo ${RCLONE_BIN} moveto "${RCLONE_REMOTE_PATH}/Past/${KODIUSERDATA_BACKUP}.1.tar.gz" "${RCLONE_REMOTE_PATH}/Past/${KODIUSERDATA_BACKUP}.2.tar.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
-#sudo ${RCLONE_BIN} moveto "${RCLONE_REMOTE_PATH}/Past/xbian_backup_home.btrfs.1.img.gz" "${RCLONE_REMOTE_PATH}/Past/xbian_backup_home.btrfs.2.img.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
+sudo ${RCLONE_BIN} moveto "${RCLONE_REMOTE_PATH}/Past/xbian_backup_home.btrfs.1.img.gz" "${RCLONE_REMOTE_PATH}/Past/xbian_backup_home.btrfs.2.img.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
 
 sudo ${RCLONE_BIN} moveto "${RCLONE_REMOTE_PATH}/${SYSTEM_BACKUP}.tar.gz" "${RCLONE_REMOTE_PATH}/Past/${SYSTEM_BACKUP}.1.tar.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
 sudo ${RCLONE_BIN} moveto "${RCLONE_REMOTE_PATH}/${KODIDB_BACKUP}.tar.gz" "${RCLONE_REMOTE_PATH}/Past/${KODIDB_BACKUP}.1.tar.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
 sudo ${RCLONE_BIN} moveto "${RCLONE_REMOTE_PATH}/${KODIUSERDATA_BACKUP}.tar.gz" "${RCLONE_REMOTE_PATH}/Past/${KODIUSERDATA_BACKUP}.1.tar.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
-#sudo ${RCLONE_BIN} moveto "${RCLONE_REMOTE_PATH}/"xbian_backup_home_*.btrfs.img.gz "${RCLONE_REMOTE_PATH}/Past/xbian_backup_home.btrfs.1.img.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
+sudo ${RCLONE_BIN} moveto "${RCLONE_REMOTE_PATH}/xbian_backup_home.btrfs.img.gz" "${RCLONE_REMOTE_PATH}/Past/xbian_backup_home.btrfs.1.img.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
 
 echo "Transfering Files..."
 sudo ${RCLONE_BIN} move "${HOMEDIR}/${SYSTEM_BACKUP}.tar.gz" "${RCLONE_REMOTE_PATH}" --config "${RCLONE_DATA_PATH}/rclone.conf"
 sudo ${RCLONE_BIN} move "${HOMEDIR}/${KODIDB_BACKUP}.tar.gz" "${RCLONE_REMOTE_PATH}" --config "${RCLONE_DATA_PATH}/rclone.conf"
 sudo ${RCLONE_BIN} move "${HOMEDIR}/${KODIUSERDATA_BACKUP}.tar.gz" "${RCLONE_REMOTE_PATH}" --config "${RCLONE_DATA_PATH}/rclone.conf"
-#sudo ${RCLONE_BIN} copy /xbmc-backup/xbian_backup_home_*.btrfs.img.gz "${RCLONE_REMOTE_PATH}" --config "${RCLONE_DATA_PATH}/rclone.conf"
+sudo ${RCLONE_BIN} copyto "$XBIAN_BACKUP_IMAGE" "${RCLONE_REMOTE_PATH}/xbian_backup_home.btrfs.img.gz" --config "${RCLONE_DATA_PATH}/rclone.conf"
 
 cd "${CURRENT_DIR}"
 
