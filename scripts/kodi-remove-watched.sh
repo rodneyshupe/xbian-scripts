@@ -391,11 +391,17 @@ function remove_empty_ended () {
 
             files=$(shopt -s nullglob dotglob; echo "$path"[a-zA-Z0-9]*)
             if [ ! -d "$path" ] || ! (( ${#files} )); then
-                echo "$(log_prefix)Directory Empty safe to remove from library empty:$path"
-                if [[ "${DRYRUN}" == "false" ]] || false; then
-                    kodi-rpc VideoLibrary.RemoveTVShow tvshowid $tvshowid > /dev/null
-
-                    [[ "${REMOVE_EMPTY_DIR}" == "true" ]] && [ -d "$path" ] && sudo rm -R "$path"
+                echo "$(log_prefix)Safe to remove from library: [$tvshowid]"
+                [[ "${DRYRUN}" == "false" ]] && false && kodi-rpc VideoLibrary.RemoveTVShow tvshowid $tvshowid > /dev/null
+                if [ -d "$path" ]; then
+                    if [[ "${REMOVE_EMPTY_DIR}" == "true" ]]; then
+                        echo "$(log_prefix)Safe to remove directory: [$tvshowid]"
+                        [[ "${DRYRUN}" == "false" ]] && false && sudo rm -R "$path"
+                    else
+                        echo "$(log_prefix)Safe to remove directory: [$tvshowid]"
+                    fi
+                else
+                    echo "$(log_prefix)Directory already removed: [$path]"
                 fi
             else
                 echo "$(log_prefix)Skipping non-empty directory: $path"
