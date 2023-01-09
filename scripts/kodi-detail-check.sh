@@ -1,8 +1,8 @@
 #!/bin/bash
 
-ENVIORMENT_FILE= "$(dirname "$0")/$(basename "$0" | cut -f 1 -d '.').env"
-[ ! -f "$ENVIORMENT_FILE" ] $ENVIORMENT_FILE="/home/$(stat -c '%U' "$0")/.config/$(basename "$0" | cut -f 1 -d '.').env"
-[ -f "$ENVIORMENT_FILE" ] source $ENVIORMENT_FILE
+ENVIORMENT_FILE="$(dirname "$0")/$(basename "$0" | cut -f 1 -d '.').env"
+[ ! -f "$ENVIORMENT_FILE" ] && ENVIORMENT_FILE="/home/$(stat -c '%U' "$0")/.config/$(basename "$0" | cut -f 1 -d '.').env"
+[ -f "$ENVIORMENT_FILE" ] && source $ENVIORMENT_FILE
 
 REMOTE_PATH="${3:-$REMOTE_PATH}"
 LOCAL_PATH="${4:-$LOCAL_PATH}"

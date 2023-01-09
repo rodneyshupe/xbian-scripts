@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-ENVIORMENT_FILE= "$(dirname "$0")/$(basename "$0" | cut -f 1 -d '.').env"
-[ ! -f "$ENVIORMENT_FILE" ] $ENVIORMENT_FILE="/home/$(stat -c '%U' "$0")/.config/$(basename "$0" | cut -f 1 -d '.').env"
-[ -f "$ENVIORMENT_FILE" ] source $ENVIORMENT_FILE
+ENVIORMENT_FILE="$(dirname "$0")/$(basename "$0" | cut -f 1 -d '.').env"
+[ ! -f "$ENVIORMENT_FILE" ] && ENVIORMENT_FILE="/home/$(stat -c '%U' "$0")/.config/$(basename "$0" | cut -f 1 -d '.').env"
+[ -f "$ENVIORMENT_FILE" ] && source $ENVIORMENT_FILE
 
 REMOTE_PATH="${3:-$REMOTE_PATH}"
 LOCAL_PATH="${4:-$LOCAL_PATH}"
@@ -43,7 +43,7 @@ get_kodi_setting() {
 }
 
 MYSQL_HOST="$(get_kodi_setting 'host')"
-MYSQL_PORT="$(get_kodi_setting 'post')"
+MYSQL_PORT="$(get_kodi_setting 'port')"
 MYSQL_USER="$(get_kodi_setting 'user')"
 MYSQL_PASS="$(get_kodi_setting 'pass')"
 

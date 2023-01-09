@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-ENVIORMENT_FILE= "$(dirname "$0")/$(basename "$0" | cut -f 1 -d '.').env"
-[ ! -f "$ENVIORMENT_FILE" ] $ENVIORMENT_FILE="/home/$(stat -c '%U' "$0")/.config/$(basename "$0" | cut -f 1 -d '.').env"
-[ -f "$ENVIORMENT_FILE" ] source $ENVIORMENT_FILE
+ENVIORMENT_FILE="$(dirname "$0")/$(basename "$0" | cut -f 1 -d '.').env"
+[ ! -f "$ENVIORMENT_FILE" ] && ENVIORMENT_FILE="/home/$(stat -c '%U' "$0")/.config/$(basename "$0" | cut -f 1 -d '.').env"
+[ -f "$ENVIORMENT_FILE" ] && source $ENVIORMENT_FILE
 
 SONARR_API_URL="${1:-$SONARR_API_URL}"
 SONARR_API_KEY="${2:-$SONARR_API_KEY}"
@@ -35,7 +35,7 @@ get_kodi_setting() {
 }
 
 MYSQL_HOST="$(get_kodi_setting 'host')"
-MYSQL_PORT="$(get_kodi_setting 'post')"
+MYSQL_PORT="$(get_kodi_setting 'port')"
 MYSQL_USER="$(get_kodi_setting 'user')"
 MYSQL_PASS="$(get_kodi_setting 'pass')"
 
@@ -116,7 +116,7 @@ function display_options(){
             WEBSERVER_SETTINGS=$(kodi-rpc Settings.GetSettings  | jq -M '.result.settings | map(select(.parent == "services.webserver"))')
             echo "  Kodi:
       Host: $(kodi-rpc XBMC.GetInfoLabels labels '[ "Network.IPAddress" ]' | jq -r '.result | .[]')
-      Post: $(echo $WEBSERVER_SETTINGS | jq -r 'map(select(.id == "services.webserverport")) | .[].value')
+      Port: $(echo $WEBSERVER_SETTINGS | jq -r 'map(select(.id == "services.webserverport")) | .[].value')
       User: $(echo $WEBSERVER_SETTINGS | jq -r 'map(select(.id == "services.webserverusername")) | .[].value')
       Pass: $(echo $WEBSERVER_SETTINGS | jq -r 'map(select(.id == "services.webserverpassword")) | .[].value')
         "
@@ -143,10 +143,10 @@ function get_kodi_myvideo_db() {
 
 function mysql_query() {
     local _QUERY="$1"
-    local _MYSQL_HOST="${1:-$(get_kodi_setting 'host')}"
-    local _MYSQL_PORT="${2:-$(get_kodi_setting 'port')}"
-    local _MYSQL_USER="${3:-$(get_kodi_setting 'user')}"
-    local _MYSQL_PASS="${4:-$(get_kodi_setting 'pass')}"
+    local _MYSQL_HOST="${2:-$(get_kodi_setting 'host')}"
+    local _MYSQL_PORT="${3:-$(get_kodi_setting 'port')}"
+    local _MYSQL_USER="${4:-$(get_kodi_setting 'user')}"
+    local _MYSQL_PASS="${5:-$(get_kodi_setting 'pass')}"
     local _KODI_DB=$6
 
     [ -z ${_KODI_DB} ] && _KODI_DB=$(get_kodi_myvideo_db "${_MYSQL_HOST}" "${_MYSQL_PORT}" "${_MYSQL_USER}" "${_MYSQL_PASS}")
@@ -263,10 +263,10 @@ function remove_watched_files () {
 }
 
 function remove_ended_files () {
-    local _MYSQL_HOST="${1:-localhost}"
-    local _MYSQL_PORT="${2:-3306}"
-    local _MYSQL_USER="${3:-kodi}"
-    local _MYSQL_PASS="${4:-kodi}"
+    local _MYSQL_HOST="${1:-$(get_kodi_setting 'host')}"
+    local _MYSQL_PORT="${2:-$(get_kodi_setting 'port')}"
+    local _MYSQL_USER="${3:-$(get_kodi_setting 'user')}"
+    local _MYSQL_PASS="${4:-$(get_kodi_setting 'pass')}"
     local _KODI_DB="$5"
 
     echo "$(log_prefix)Removing files from ended series:"
