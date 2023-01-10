@@ -96,6 +96,7 @@ echo "Copy Sample .env Files..."
 
 # Copy Script Files
 echo "Copy Script Files..."
+curl -sSL "$GITHUB_REPO_URL/scripts/kodi-tvshow-refresh.sh"  > "$HOME/.scripts/kodi-tvshow-refresh.sh"
 curl -sSL "$GITHUB_REPO_URL/scripts/kodi-episode-check.sh"  > "$HOME/.scripts/kodi-episode-check.sh"
 curl -sSL "$GITHUB_REPO_URL/scripts/kodi-detail-check.sh"   > "$HOME/.scripts/kodi-detail-check.sh"
 curl -sSL "$GITHUB_REPO_URL/scripts/kodi-remove-watched.sh" > "$HOME/.scripts/kodi-remove-watched.sh"
@@ -107,6 +108,7 @@ curl -sSL "$GITHUB_REPO_URL/scripts/pretrip.sh" > "$HOME/.scripts/pretrip.sh"
 
 chmod +x "$HOME/.scripts"/*
 
+[ -f "$HOME/.scripts/kodi-tvshow-refresh.sh" ] && [ ! -f "$HOME/refresh" ] && ln -s "$HOME/.scripts/kodi-tvshow-refresh.sh" "$HOME/refresh"
 [ -f "$HOME/.scripts/backup.sh" ] && [ ! -f "$HOME/backup" ] && ln -s "$HOME/.scripts/backup.sh" "$HOME/backup"
 [ -f "$HOME/.scripts/backup.sh" ] && [ ! -f "$HOME/backup-image" ] && ln -s "$HOME/.scripts/backup-image.sh" "$HOME/backup-image"
 [ -f "$HOME/.scripts/restore.sh" ] && [ ! -f "$HOME/restore" ] && ln -s "$HOME/.scripts/restore.sh" "$HOME/restore"
@@ -127,6 +129,7 @@ sudo chmod +x /etc/update-motd.d/15-logo
 sudo chmod +x /etc/update-motd.d/20-status
 
 # To run the scripts:
+# sudo $HOME/.scripts/kodi-tvshow-refresh.sh -c -e -d 5 -o | sudo tee -a /var/log/$USER/kodi-tvshow-refresh.log
 # sudo $HOME/.scripts/kodi-remove-watched.sh | sudo tee -a /var/log/$USER/kodi-removed-watched.log
 # sudo $HOME/.scripts/kodi-episode-check.sh | sudo tee -a /var/log/$USER/kodi-episode-check.log
 # sudo $HOME/.scripts/sonarr-unmonitor-watched.sh | sudo tee -a /var/log/$USER/sonarr-unmonitor-watched.log
