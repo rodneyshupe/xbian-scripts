@@ -153,7 +153,32 @@ function mysql_query() {
         --execute="${_QUERY}"
 }
 
-function refresh_series () {
+function remove_duplicate_tvshows() {
+    local _MYSQL_HOST="${1:-$(get_kodi_setting 'host')}"
+    local _MYSQL_PORT="${2:-$(get_kodi_setting 'port')}"
+    local _MYSQL_USER="${3:-$(get_kodi_setting 'user')}"
+    local _MYSQL_PASS="${4:-$(get_kodi_setting 'pass')}"
+
+    echo "$(log_prefix)Remove duplicate tvshow entries..."
+
+    local _KODI_DB=$(get_kodi_myvideo_db "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}")
+
+    #Get file path and episode id from supplied partial_path
+    SHOW_LIST="$(mktemp --tmpdir -- tmp.lst.XXXXXXXXXX)"
+    local _QUERY="SELECT MIN(t.idShow) FROM tvshow t JOIN tvshowlinkpath tl ON tl.idShow = t.idShow JOIN path p ON p.idPath = tl.idPath GROUP BY t.c00, p.strPath HAVING COUNT(t.idShow) > 1 ORDER BY t.c00"
+    mysql_query "${_QUERY}" "${_MYSQL_HOST}" "${_MYSQL_PORT}" "${_MYSQL_USER}" "${_MYSQL_PASS}" "${_KODI_DB}" \
+        > "${SHOW_LIST}" \
+        || { echo >&2 "ERROR: mysql Query Failed.  Aborting."; exit 2; }
+
+    while read tvShowId; do
+        echo "$(log_prefix)    Processing $(kodi-rpc VideoLibrary.GetTVShowDetails tvshowid $tvShowId | jq .result.tvshowdetails.label -c)..."
+        kodi-rpc VideoLibrary.RemoveTVShow tvshowid $tvShowId > /dev/null
+        sleep $DELAY
+    done < "$SHOW_LIST"
+    rm "$SHOW_LIST"
+}
+
+function refresh_tvshows() {
     local _MYSQL_HOST="${1:-$(get_kodi_setting 'host')}"
     local _MYSQL_PORT="${2:-$(get_kodi_setting 'port')}"
     local _MYSQL_USER="${3:-$(get_kodi_setting 'user')}"
@@ -173,7 +198,7 @@ function refresh_series () {
         WHERE="WHERE c02 NOT IN ('Ended', 'Continuing')"
     fi
 
-    echo "$(log_prefix)Refreshing $WHAT series..."
+    echo "$(log_prefix)Refreshing $WHAT tv shows..."
 
     local _KODI_DB=$(get_kodi_myvideo_db "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}")
 
@@ -210,6 +235,8 @@ parse_args $@
 
 display_options
 
-refresh_series "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}"
+remove_duplicate_tvshows "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}"
+
+refresh_tvshows "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}"
 
 echo "$(log_prefix)Complete. Time Elapsed: $(secs_to_human "$(($(date +%s) - ${START_SEC}))")"
