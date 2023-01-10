@@ -29,7 +29,13 @@ get_kodi_setting() {
     if [ -z ${file} ] || [ ! -f ${file} ]; then
         kodi_user="$(ps aux | grep kodi | grep -v grep | head -n1 | cut -d ' ' -f1)"
         [ -z $kodi_user ] && kodi_user="$(getent passwd 1000 | cut -d: -f1)"
+        [ ! -d "/home/${kodi_user}" ] && kodi_user='xbian'
         file="/home/${kodi_user}/.kodi/userdata/advancedsettings.xml"
+    fi
+
+    if [ ! -f "$file" ]; then
+        echo "Error KODI config file missing [$file]"
+        exit 1
     fi
 
     # Set the regular expression to match the node
