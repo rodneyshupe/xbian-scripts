@@ -397,13 +397,13 @@ function remove_empty_ended () {
             tvshowid=${PARTS[1]}
 
             files=$(shopt -s nullglob dotglob; echo "$path"[a-zA-Z0-9]*)
-            if [ ! -d "$path" ] || ! (( ${#files} )); then
+            if ! (( ${#files} )); then
                 echo -n "$(log_prefix)Safe to remove from library: [$tvshowid] "
                 [[ "${DRYRUN}" == "false" ]] && false && kodi-rpc VideoLibrary.RemoveTVShow tvshowid $tvshowid > /dev/null
                 if [ -d "$path" ]; then
                     if [[ "${REMOVE_EMPTY_DIR}" == "true" ]]; then
                         echo "Removing directory: [$path]"
-                        [[ "${DRYRUN}" == "false" ]] && [[ "${_DEBUG}" == "false" ]] && sudo rm -R "$path"
+                        [[ "${DRYRUN}" == "false" ]] && sudo rm -R "$path"
                     else
                         echo "Safe to remove directory: [$path]"
                     fi
