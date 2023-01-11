@@ -7,6 +7,8 @@
 # PS4='$LINENO: '
 # set -x
 
+FLAG_CREATE_IMG=1 #TODO: Make this a parameter to get passed in
+
 HOMEUSER="$(stat -c '%U' "$0")"
 HOMEDIR="/home/${HOMEUSER}"
 OS_DEFAULT_USER="$(getent passwd 1000 | cut -d: -f1)"
@@ -39,62 +41,87 @@ function ensure_sudo() {
     fi
 }
 
-ensure_sudo
-
 START_SEC=$(date +%s)
 echo "$(log_prefix)Start Time: $(date)"
+
+ensure_sudo
 
 CURRENT_DIR="$PWD"
 
 cd "${HOMEDIR}"
 
-#Create a backup image
+if [ $FLAG_CREATE_IMG -eq 1 ]; then
+    #Create a backup image
 
-IMAGE_NAME="$(hostname --all-fqdns | tr '[:upper:]' '[:lower:]')"
-[ -z "${IMAGE_NAME}" ] && IMAGE_NAME="$(hostname --fqdn)"
-[ -z "${IMAGE_NAME}" ] && IMAGE_NAME="$(uname -n)"
-IMAGE_NAME="$(echo "$IMAGE_NAME" | sed -e 's/\.private//' -e 's/ //g' -e 's/\./_/g')"
-[[ "$IMAGE_NAME" == "xbian" ]] && IMAGE_NAME="xbian_image"
-[[ "$IMAGE_NAME" != "xbian"* ]] && IMAGE_NAME="xbian_$IMAGE_NAME"
-IMAGE_FILE="$IMAGE_NAME.$(date +'%Y-%m-%d').img"
-IMAGE_PATH="$BACKUP_PATH/$IMAGE_FILE"
-ARCHIVE_PATH="$BACKUP_PATH/$IMAGE_FILE.gz"
+    IMAGE_NAME="$(hostname --all-fqdns | tr '[:upper:]' '[:lower:]')"
+    [ -z "${IMAGE_NAME}" ] && IMAGE_NAME="$(hostname --fqdn)"
+    [ -z "${IMAGE_NAME}" ] && IMAGE_NAME="$(uname -n)"
+    IMAGE_NAME="$(echo "$IMAGE_NAME" | sed -e 's/\.private//' -e 's/ //g' -e 's/\./_/g')"
+    [[ "$IMAGE_NAME" == "xbian" ]] && IMAGE_NAME="xbian_image"
+    [[ "$IMAGE_NAME" != "xbian"* ]] && IMAGE_NAME="xbian_$IMAGE_NAME"
+    IMAGE_FILE="$IMAGE_NAME.$(date +'%Y-%m-%d').img"
+    IMAGE_PATH="$BACKUP_PATH/$IMAGE_FILE"
+    ARCHIVE_PATH="$BACKUP_PATH/$IMAGE_FILE.gz"
 
-xbiancopy_log="/tmp/xbiancopy.log"
-rm $xbiancopy_log >/dev/null 2>&1
-sudo xbian-config xbiancopy start /dev/root "file:$IMAGE_PATH" > /tmp/xbiancopy.pid
-if [ $? -ne 0 ]; then
-    test -t 1 && echo
-    echo "$(log_prefix)ERROR: Error ($pid) creating image: [$IMAGE_PATH]"
-    exit 1;
-fi
+    sudo xbian-config xbiancopy start /dev/root "file:$IMAGE_PATH" > /tmp/xbiancopy.pid
+    if [ $? -ne 0 ]; then
+        test -t 1 && echo
+        echo "$(log_prefix)ERROR: Error starting image backup: [$IMAGE_PATH]"
+        exit 1
+    fi
 
-echo -n "$(log_prefix)Creating image to $IMAGE_FILE..."
-# Wait
-#while [ $(sudo xbian-config xbiancopy status) -ge 0 ]; do
-sleep 5
-if [ -f "$xbiancopy_log" ]; then
-    success_msg="Operation sucessfully completed"
-    fail_msg="Operation failed with error"
-    while [ $(grep -e "$success_msg" -e "$fail_msg" "$xbiancopy_log" > /dev/null; echo $?) -ne 0 ]; do
-        test -t 1 && echo -n "."
-        sleep 5
+    msg="Creating image to $IMAGE_FILE: "
+    echo -n "$(log_prefix)$msg"
+
+
+    sleep 5
+    if [ ! -f /tmp/xbiancopy.running ]; then
+        echo "$(log_prefix)"
+        echo "$(log_prefix)ERROR: Error backup not started: [$IMAGE_PATH]"
+        exit 1
+    fi
+
+    count=5
+    while [ -f /tmp/xbiancopy.running ]; do
+        if test -t 1; then
+            # Calculate the minutes and seconds
+            minutes=$((count / 60))
+            seconds=$((count % 60))
+
+            # Format the timer string
+            if [ "$seconds" -lt 10 ]; then
+                # Add a leading zero to the seconds if necessary
+                timer="$minutes:0$seconds"
+            else
+                timer="$minutes:$seconds"
+            fi
+
+            echo -ne "\r$msg$timer"
+        fi
+        sleep 1
+        ((count++))
+        [ $((count % 5)) -eq 0 ] && sudo xbian-config xbiancopy status > /dev/null
     done
     echo ""
+    sleep 5
+    sync; sync
+
+    fail_msg="Operation failed with error"
+    xbiancopy_log="/tmp/xbiancopy.log"
     if [ $(grep -e "$fail_msg" "$xbiancopy_log" > /dev/null; echo $?) -eq 0 ]; then
         echo "$(log_prefix)ERROR: $(grep -e "$fail_msg" "$xbiancopy_log"): [$IMAGE_PATH]"
         exit 1
     fi
-    sleep 5
+
+    if [ ! -f "$IMAGE_PATH" ]; then
+        test -t 1 && echo
+        echo "$(log_prefix)ERROR: Failed to create image: [$IMAGE_PATH]"
+        exit 1;
+    fi
+
+    echo "$(log_prefix)Image created [$(ls $IMAGE_PATH -alh | cut -d " " -f5)]" # NOTE: Image can be checked using `sudo sfdisk -uS -N1 -f -q -l $IMAGE_PATH`
 fi
 
-if [ ! -f "$IMAGE_PATH" ]; then
-    test -t 1 && echo
-    echo "$(log_prefix)ERROR: Failed to create image: [$IMAGE_PATH]"
-    exit 1;
-fi
-
-echo "$(log_prefix)Image created [$(ls $IMAGE_PATH -alh | cut -d " " -f5)]" # NOTE: Image can be checked using `sudo sfdisk -uS -N1 -f -q -l $IMAGE_PATH`
 echo "$(log_prefix)Shrinking image..."
 if gzip --quiet "$IMAGE_PATH"; then
     if [ ! -f $ARCHIVE_PATH ]; then
