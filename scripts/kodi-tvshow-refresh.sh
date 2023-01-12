@@ -117,21 +117,34 @@ function display_options(){
     fi
 }
 
-function get_kodi_myvideo_db() {
-    local _MYSQL_HOST="${1:-$(get_kodi_setting 'host')}"
-    local _MYSQL_PORT="${2:-$(get_kodi_setting 'port')}"
-    local _MYSQL_USER="${3:-$(get_kodi_setting 'user')}"
-    local _MYSQL_PASS="${4:-$(get_kodi_setting 'pass')}"
+function get_kodi_db_name() {
+    local DB_TYPE="${1:-videodatabase}"
+    local _MYSQL_HOST="${2:-$(get_kodi_setting 'host')}"
+    local _MYSQL_PORT="${3:-$(get_kodi_setting 'port')}"
+    local _MYSQL_USER="${4:-$(get_kodi_setting 'user')}"
+    local _MYSQL_PASS="${5:-$(get_kodi_setting 'pass')}"
+
+    local _MYSQL_DB="$(get_kodi_setting 'name' "$DB_TYPE")"
+    if [ -z $_MYSQL_DB ]; then
+        if [[ "$DB_TYPE" == "videodatabase" ]]; then
+            _MYSQL_DB='MyVideos'
+        elif [[ "$DB_TYPE" == "musicdatabase" ]]; then
+            _MYSQL_DB='MyMusic'
+        else
+            echo "Error: Unknown database type." >&2
+            exit 1
+        fi
+    fi
 
     echo $(MYSQL_PWD="$_MYSQL_PASS" mysql --skip-column-names \
-                                        --user=$_MYSQL_USER \
-                                        --host=$_MYSQL_HOST \
-                                        --port=$_MYSQL_PORT \
-                                        --execute="SELECT table_schema
-                                                   FROM information_schema.TABLES
-                                                   WHERE table_schema LIKE 'MyVideos%'
-                                                   GROUP BY table_schema;" \
-                                    | sort | tail --lines=1)
+                                          --user=$_MYSQL_USER \
+                                          --host=$_MYSQL_HOST \
+                                          --port=$_MYSQL_PORT \
+                                          --execute="SELECT table_schema
+                                                     FROM information_schema.TABLES
+                                                     WHERE table_schema LIKE '${_MYSQL_DB}%'
+                                                     GROUP BY table_schema;" \
+                                        | sort | tail --lines=1)
 }
 
 function mysql_query() {
@@ -142,7 +155,7 @@ function mysql_query() {
     local _MYSQL_PASS="${5:-$(get_kodi_setting 'pass')}"
     local _KODI_DB=$6
 
-    [ -z ${_KODI_DB} ] && _KODI_DB=$(get_kodi_myvideo_db "${_MYSQL_HOST}" "${_MYSQL_PORT}" "${_MYSQL_USER}" "${_MYSQL_PASS}")
+    [ -z ${_KODI_DB} ] && _KODI_DB=$(get_kodi_db_name "videodatabase" "$_MYSQL_HOST" "$_MYSQL_PORT" "$_MYSQL_USER" "$_MYSQL_PASS")
 
     MYSQL_PWD="$_MYSQL_PASS" mysql \
         --skip-column-names \
@@ -161,7 +174,7 @@ function remove_duplicate_tvshows() {
 
     echo "$(log_prefix)Remove duplicate tvshow entries..."
 
-    local _KODI_DB=$(get_kodi_myvideo_db "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}")
+    local _KODI_DB=$(get_kodi_db_name "videodatabase" "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}")
 
     #Get file path and episode id from supplied partial_path
     SHOW_LIST="$(mktemp --tmpdir -- tmp.lst.XXXXXXXXXX)"
@@ -200,7 +213,7 @@ function refresh_tvshows() {
 
     echo "$(log_prefix)Refreshing $WHAT tv shows..."
 
-    local _KODI_DB=$(get_kodi_myvideo_db "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}")
+    local _KODI_DB=$(get_kodi_db_name "videodatabase" "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}")
 
     #Get file path and episode id from supplied partial_path
     SHOW_LIST="$(mktemp --tmpdir -- tmp.lst.XXXXXXXXXX)"

@@ -48,6 +48,36 @@ get_kodi_setting() {
     tr '\n' ' ' <"${file}" | grep --text --only-matching --ignore-case --regexp "$regex" | sed "s/.*<${node}>\(.*\)<\/${node}>.*/\1/i"
 }
 
+function get_kodi_db_name() {
+    local DB_TYPE="${1:-videodatabase}"
+    local _MYSQL_HOST="${2:-$(get_kodi_setting 'host')}"
+    local _MYSQL_PORT="${3:-$(get_kodi_setting 'port')}"
+    local _MYSQL_USER="${4:-$(get_kodi_setting 'user')}"
+    local _MYSQL_PASS="${5:-$(get_kodi_setting 'pass')}"
+
+    local _MYSQL_DB="$(get_kodi_setting 'name' "$DB_TYPE")"
+    if [ -z $_MYSQL_DB ]; then
+        if [[ "$DB_TYPE" == "videodatabase" ]]; then
+            _MYSQL_DB='MyVideos'
+        elif [[ "$DB_TYPE" == "musicdatabase" ]]; then
+            _MYSQL_DB='MyMusic'
+        else
+            echo "Error: Unknown database type." >&2
+            exit 1
+        fi
+    fi
+
+    echo $(MYSQL_PWD="$_MYSQL_PASS" mysql --skip-column-names \
+                                          --user=$_MYSQL_USER \
+                                          --host=$_MYSQL_HOST \
+                                          --port=$_MYSQL_PORT \
+                                          --execute="SELECT table_schema
+                                                     FROM information_schema.TABLES
+                                                     WHERE table_schema LIKE '${_MYSQL_DB}%'
+                                                     GROUP BY table_schema;" \
+                                        | sort | tail --lines=1)
+}
+
 MYSQL_HOST="$(get_kodi_setting 'host')"
 MYSQL_PORT="$(get_kodi_setting 'port')"
 MYSQL_USER="$(get_kodi_setting 'user')"
@@ -71,16 +101,10 @@ find "${LOCAL_PATH}" -type f \
 | grep -iE "\.webm$|\.flv$|\.vob$|\.ogg$|\.ogv$|\.drc$|\.gifv$|\.mng$|\.avi$|\.mov$|\.qt$|\.wmv$|\.yuv$|\.rm$|\.rmvb$|/.asf$|\.amv$|\.mp4$|\.m4v$|\.mp4$|\.m.?v$|\.svi$|\.3gp$|\.flv$|\.f4v$" \
 | sed -e "s|^$LOCAL_PATH|$REMOTE_PATH|g" > $TMP_FILELIST_LOCAL
 
-export MYSQL_PWD=$MYSQL_PASS
-LATEST_DB_QUERY="SELECT table_schema FROM information_schema.TABLES WHERE table_schema LIKE 'MyVideos%' GROUP BY table_schema;"
-MYSQL_KODI_VIDEOS_DB=$(mysql --skip-column-names \
-                             --user=$MYSQL_USER \
-                             --host=$MYSQL_HOST \
-                             --port=$MYSQL_PORT \
-                             --execute="$LATEST_DB_QUERY" \
-                       | sort | tail --lines=1)
+MYSQL_KODI_VIDEOS_DB=$(get_kodi_db_name "videodatabase" "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}")
 
 echo "$(log_prefix)Pulling file list from library [$MYSQL_KODI_VIDEOS_DB]..."
+export MYSQL_PWD=$MYSQL_PASS
 mysql --skip-column-names \
   --user=$MYSQL_USER \
   --host=$MYSQL_HOST \
