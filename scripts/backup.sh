@@ -36,7 +36,7 @@ get_kodi_setting() {
     fi
 
     if [ ! -f "$file" ]; then
-        echo "Error KODI config file missing [$file]"
+        echo "$(log_prefix)Error KODI config file missing [$file]"
         exit 1
     fi
 
@@ -50,6 +50,36 @@ get_kodi_setting() {
 
     # Extract the value of the node using grep and sed
     tr '\n' ' ' <"${file}" | grep --text --only-matching --ignore-case --regexp "$regex" | sed "s/.*<${node}>\(.*\)<\/${node}>.*/\1/i"
+}
+
+function get_kodi_db_name() {
+    local DB_TYPE="${1:-videodatabase}"
+    local _MYSQL_HOST="${2:-$(get_kodi_setting 'host')}"
+    local _MYSQL_PORT="${3:-$(get_kodi_setting 'port')}"
+    local _MYSQL_USER="${4:-$(get_kodi_setting 'user')}"
+    local _MYSQL_PASS="${5:-$(get_kodi_setting 'pass')}"
+
+    local _MYSQL_DB="$(get_kodi_setting 'name' "$DB_TYPE")"
+    if [ -z $_MYSQL_DB ]; then
+        if [[ "$DB_TYPE" == "videodatabase" ]]; then
+            _MYSQL_DB='MyVideos'
+        elif [[ "$DB_TYPE" == "musicdatabase" ]]; then
+            _MYSQL_DB='MyMusic'
+        else
+            echo "Error: Unknown database type." >&2
+            exit 1
+        fi
+    fi
+
+    echo $(MYSQL_PWD="$_MYSQL_PASS" mysql --skip-column-names \
+                                          --user=$_MYSQL_USER \
+                                          --host=$_MYSQL_HOST \
+                                          --port=$_MYSQL_PORT \
+                                          --execute="SELECT table_schema
+                                                     FROM information_schema.TABLES
+                                                     WHERE table_schema LIKE '${_MYSQL_DB}%'
+                                                     GROUP BY table_schema;" \
+                                        | sort | tail --lines=1)
 }
 
 MYSQL_USER="$(get_kodi_setting 'user')"
@@ -87,7 +117,7 @@ function encode_path {
 }
 
 START_SEC=$(date +%s)
-echo "Start Time: $(date)"
+echo "$(log_prefix)Start Time: $(date)"
 
 ensure_sudo
 
@@ -137,7 +167,7 @@ fi
 XBIAN_BACKUP_IMAGE="$(ls -t /xbmc-backup/xbian_backup_home_$(date +'%Y-%m-%d')*.btrfs.img.gz | head -1)"
 
 #Create a system backup
-echo "Creating backup of system files..."
+echo "$(log_prefix)Creating backup of system files..."
 TEMP_DIR=$(mktemp -d -t "${SYSTEM_BACKUP}-XXXXXXXXXX")
 cd "${TEMP_DIR}"
 mkdir "${SYSTEM_BACKUP}"
@@ -172,10 +202,10 @@ for path in "${backup_files[@]}"; do
         elif [ -f "${path}" ]; then
             cp "${path}" "$(encode_path ${path})"
         else
-            echo "  ERROR: $path. Not recognized as directory or file."
+            echo "$(log_prefix)  ERROR: $path. Not recognized as directory or file."
         fi
     else
-        echo "  ERROR: File (${path}) Missing"
+        echo "$(log_prefix)  ERROR: File (${path}) Missing"
     fi
 done
 
@@ -184,29 +214,17 @@ sudo tar  --gzip --create --file="${HOMEDIR}/${SYSTEM_BACKUP}.tar.gz" .
 cd "${HOMEDIR}"
 sudo rm -R "${TEMP_DIR}"
 
-echo "Archiving kodi db backups..."
+echo "$(log_prefix)Archiving kodi db backups..."
 TEMP_DIR=$(mktemp -d -t "${KODIDB_BACKUP}-XXXXXXXXXX")
 cd "${TEMP_DIR}"
 mkdir "${KODIDB_BACKUP}"
 
+MYSQL_KODI_VIDEOS_DB=$(get_kodi_db_name "videodatabase" "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}")
+MYSQL_KODI_MUSIC_DB=$(get_kodi_db_name "musicdatabase" "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}")
+
+echo "$(log_prefix)  Music [$MYSQL_KODI_VIDEOS_DB] and Video [$MYSQL_KODI_MUSIC_DB] DBS..."
+
 export MYSQL_PWD=$MYSQL_PASS
-
-LATEST_DB_QUERY="SELECT table_schema FROM information_schema.TABLES WHERE table_schema LIKE 'MyVideos%' GROUP BY table_schema;"
-MYSQL_KODI_VIDEOS_DB=$(mysql --skip-column-names \
-                             --user=$MYSQL_USER \
-                             --host=$MYSQL_HOST \
-                             --port=$MYSQL_PORT \
-                             --execute="$LATEST_DB_QUERY" \
-                       | sort | tail --lines=1)
-
-LATEST_DB_QUERY="SELECT table_schema FROM information_schema.TABLES WHERE table_schema LIKE 'MyMusic%' GROUP BY table_schema;"
-MYSQL_KODI_MUSIC_DB=$(mysql --skip-column-names \
-                             --user=$MYSQL_USER \
-                             --host=$MYSQL_HOST \
-                             --port=$MYSQL_PORT \
-                             --execute="$LATEST_DB_QUERY" \
-                      | sort | tail --lines=1)
-
 mysqldump \
     --user=$MYSQL_USER \
     --host=$MYSQL_HOST \
@@ -219,24 +237,26 @@ mysqldump \
     --databases $MYSQL_KODI_VIDEOS_DB $MYSQL_KODI_MUSIC_DB \
     > kodi_backup.sql
 
-mysqldump \
-    --user=$MYSQL_USER \
-    --host=$MYSQL_HOST \
-    --port=$MYSQL_PORT \
-    --add-drop-database \
-    --add-drop-table \
-    --add-drop-trigger \
-    --routines \
-    --triggers \
-    --where="User='$MYSQL_USER'" \
-    >> kodi_backup.sql
+#echo "$(log_prefix)  User [$MYSQL_USER] specific..."
+#
+#mysqldump \
+#    --user=$MYSQL_USER \
+#    --host=$MYSQL_HOST \
+#    --port=$MYSQL_PORT \
+#    --add-drop-database \
+#    --add-drop-table \
+#    --add-drop-trigger \
+#    --routines \
+#    --triggers \
+#    --where="User='$MYSQL_USER'" \
+#    >> kodi_backup.sql
 
 sudo tar --gzip --create --file="${HOMEDIR}/${KODIDB_BACKUP}.tar.gz" .
 
 cd "${HOMEDIR}"
 sudo rm -R "${TEMP_DIR}"
 
-echo "Archiving kodi userdata backups..."
+echo "$(log_prefix)Archiving kodi userdata backups..."
 TEMP_DIR=$(mktemp -d -t "${KODIUSERDATA_BACKUP}-XXXXXXXXXX")
 cd "${TEMP_DIR}"
 mkdir "userdata"
@@ -250,7 +270,7 @@ cd "${HOMEDIR}"
 sudo rm -R "${TEMP_DIR}"
 
 
-echo "Cycling Backups..."
+echo "$(log_prefix)Cycling Backups..."
 sudo ${RCLONE_BIN} deletefile "${RCLONE_REMOTE_PATH}/Past/${SYSTEM_BACKUP}.2.tar.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
 sudo ${RCLONE_BIN} deletefile "${RCLONE_REMOTE_PATH}/Past/${KODIDB_BACKUP}.2.tar.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
 sudo ${RCLONE_BIN} deletefile "${RCLONE_REMOTE_PATH}/Past/${KODIUSERDATA_BACKUP}.2.tar.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
@@ -266,7 +286,7 @@ sudo ${RCLONE_BIN} moveto "${RCLONE_REMOTE_PATH}/${KODIDB_BACKUP}.tar.gz" "${RCL
 sudo ${RCLONE_BIN} moveto "${RCLONE_REMOTE_PATH}/${KODIUSERDATA_BACKUP}.tar.gz" "${RCLONE_REMOTE_PATH}/Past/${KODIUSERDATA_BACKUP}.1.tar.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
 sudo ${RCLONE_BIN} moveto "${RCLONE_REMOTE_PATH}/xbian_backup_home.btrfs.img.gz" "${RCLONE_REMOTE_PATH}/Past/xbian_backup_home.btrfs.1.img.gz" --quiet --config "${RCLONE_DATA_PATH}/rclone.conf"
 
-echo "Transfering Files..."
+echo "$(log_prefix)Transfering Files..."
 sudo ${RCLONE_BIN} move "${HOMEDIR}/${SYSTEM_BACKUP}.tar.gz" "${RCLONE_REMOTE_PATH}" --config "${RCLONE_DATA_PATH}/rclone.conf"
 sudo ${RCLONE_BIN} move "${HOMEDIR}/${KODIDB_BACKUP}.tar.gz" "${RCLONE_REMOTE_PATH}" --config "${RCLONE_DATA_PATH}/rclone.conf"
 sudo ${RCLONE_BIN} move "${HOMEDIR}/${KODIUSERDATA_BACKUP}.tar.gz" "${RCLONE_REMOTE_PATH}" --config "${RCLONE_DATA_PATH}/rclone.conf"
@@ -275,4 +295,4 @@ sudo ${RCLONE_BIN} copyto "$XBIAN_BACKUP_IMAGE" "${RCLONE_REMOTE_PATH}/xbian_bac
 cd "${CURRENT_DIR}"
 
 echo
-echo "Complete. Time Elapsed: $(secs_to_human "$(($(date +%s) - ${START_SEC}))")"
+echo "$(log_prefix)Complete. Time Elapsed: $(secs_to_human "$(($(date +%s) - ${START_SEC}))")"
