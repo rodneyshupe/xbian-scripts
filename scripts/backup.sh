@@ -259,7 +259,11 @@ echo "$(log_prefix)Archiving kodi userdata backups..."
 TEMP_DIR=$(mktemp -d -t "${KODIUSERDATA_BACKUP}-XXXXXXXXXX")
 cd "${TEMP_DIR}"
 mkdir "userdata"
+mkdir "addons"
+
 rsync --archive --quiet "${OS_DEFAULT_USER_DIR}/.kodi/userdata/" "${TEMP_DIR}/userdata" --exclude=Thumbnails
+rsync --archive --quiet "${OS_DEFAULT_USER_DIR}/.kodi/addons/" "${TEMP_DIR}/addons"
+
 rm "${TEMP_DIR}"/userdata/Database/Textures13.db 2>/dev/null
 rm -R "${TEMP_DIR}"/userdata/*.bak 2>/dev/null
 
