@@ -237,19 +237,18 @@ mysqldump \
     --databases $MYSQL_KODI_VIDEOS_DB $MYSQL_KODI_MUSIC_DB \
     > kodi_backup.sql
 
-#echo "$(log_prefix)  User [$MYSQL_USER] specific..."
-#
-#mysqldump \
-#    --user=$MYSQL_USER \
-#    --host=$MYSQL_HOST \
-#    --port=$MYSQL_PORT \
-#    --add-drop-database \
-#    --add-drop-table \
-#    --add-drop-trigger \
-#    --routines \
-#    --triggers \
-#    --where="User='$MYSQL_USER'" \
-#    >> kodi_backup.sql
+echo "$(log_prefix)  User [$MYSQL_USER] specific..."
+
+mysqldump \
+    --user=$MYSQL_USER \
+    --host=$MYSQL_HOST \
+    --port=$MYSQL_PORT \
+    --skip-add-drop-table
+    --no-create-info \
+    --databases mysql
+    --tables user 
+    --where="User='$MYSQL_USER'" \
+    > kodi_user_backup.sql
 
 sudo tar --gzip --create --file="${HOMEDIR}/${KODIDB_BACKUP}.tar.gz" .
 
