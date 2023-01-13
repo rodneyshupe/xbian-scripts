@@ -243,10 +243,10 @@ mysqldump \
     --user=$MYSQL_USER \
     --host=$MYSQL_HOST \
     --port=$MYSQL_PORT \
-    --skip-add-drop-table
+    --skip-add-drop-table \
     --no-create-info \
-    --databases mysql
-    --tables user 
+    --databases mysql \
+    --tables user \
     --where="User='$MYSQL_USER'" \
     > kodi_user_backup.sql
 
