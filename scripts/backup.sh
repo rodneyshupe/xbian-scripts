@@ -222,7 +222,7 @@ mkdir "${KODIDB_BACKUP}"
 MYSQL_KODI_VIDEOS_DB=$(get_kodi_db_name "videodatabase" "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}")
 MYSQL_KODI_MUSIC_DB=$(get_kodi_db_name "musicdatabase" "${MYSQL_HOST}" "${MYSQL_PORT}" "${MYSQL_USER}" "${MYSQL_PASS}")
 
-echo "$(log_prefix)  Music [$MYSQL_KODI_VIDEOS_DB] and Video [$MYSQL_KODI_MUSIC_DB] DBS..."
+echo "$(log_prefix)  Music [$MYSQL_KODI_MUSIC_DB] and Video [$MYSQL_KODI_VIDEOS_DB] databases..."
 
 export MYSQL_PWD=$MYSQL_PASS
 mysqldump \
