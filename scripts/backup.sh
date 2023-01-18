@@ -183,6 +183,7 @@ backup_files=( /etc/ssh/sshd_config \
         /etc/samba/smb.conf \
         /etc/samba/shares.conf \
         /etc/fstab \
+        /etc/network/if-up.d/fstab \
         /etc/hostname \
         /etc/hosts \
         "${HOMEDIR}/.scripts" \
