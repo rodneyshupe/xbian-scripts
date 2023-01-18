@@ -16,6 +16,9 @@ sudo apt-get --quiet --quiet update \
     && sudo apt-get --yes --quiet --quiet upgrade \
     && sudo apt-get --yes --quiet --quiet install screen cron zip unzip wget curl nano jq logrotate mariadb-client
 
+# Ensure network shares mount after network is up.
+echo -e '#!/bin/sh\nmount -a' | sudo tee /etc/network/if-up.d/fstab >/dev/null && sudo chmod +x /etc/network/if-up.d/fstab
+
 # Install rclone
 echo "Install rclone..."
 curl -sSL https://rclone.org/install.sh | sudo bash
